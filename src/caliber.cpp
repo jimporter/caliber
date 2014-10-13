@@ -42,7 +42,6 @@ int main(int argc, const char *argv[]) {
   pos.add("file", -1);
 
   opts::variables_map vm;
-  std::vector<std::string> child_args;
   try {
     opts::options_description all;
     all.add(generic).add(output).add(child).add(hidden);
