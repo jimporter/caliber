@@ -5,11 +5,16 @@
 namespace caliber {
 
 namespace detail {
+  inline uint64_t generate_id() {
+    static std::atomic<uint64_t> id_(0);
+    return id_++;
+  }
+
   void run_test_file(
     const std::string &file, mettle::log::test_logger &logger,
     const mettle::filter_set &/*filter*/, test_compiler &compiler
   ) {
-    const mettle::test_name name = {{"Compilation tests"}, file, 0};
+    const mettle::test_name name = {{"Compilation tests"}, file, generate_id()};
     logger.started_test(name);
 
     mettle::log::test_output output;
