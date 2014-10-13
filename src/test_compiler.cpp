@@ -32,7 +32,7 @@ test_compiler::~test_compiler() {
 }
 
 int test_compiler::operator ()(const std::string &file,
-                               mettle::log::test_output &output) {
+                               mettle::log::test_output &output) const {
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
   if(stdout_pipe.open() < 0 ||
      stderr_pipe.open() < 0)

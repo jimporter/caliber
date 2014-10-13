@@ -12,7 +12,7 @@ namespace detail {
 
   void run_test_file(
     const std::string &file, mettle::log::test_logger &logger,
-    const mettle::filter_set &/*filter*/, test_compiler &compiler
+    const test_compiler &compiler, const mettle::filter_set &/*filter*/
   ) {
     const mettle::test_name name = {{"Compilation tests"}, file, generate_id()};
     logger.started_test(name);
@@ -34,15 +34,13 @@ namespace detail {
 
 void run_test_files(
   const std::vector<std::string> &files, mettle::log::test_logger &logger,
-  const mettle::filter_set &filter
+  const test_compiler &compiler, const mettle::filter_set &filter
 ) {
   logger.started_run();
   logger.started_suite({"Compilation tests"});
 
-  test_compiler compiler("/tmp/caliber-XXXXXX");
-
   for(const auto &file : files)
-    detail::run_test_file(file, logger, filter, compiler);
+    detail::run_test_file(file, logger, compiler, filter);
 
   logger.ended_suite({"Compilation tests"});
   logger.ended_run();

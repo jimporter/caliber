@@ -11,6 +11,7 @@
 #include <mettle/driver/log/term.hpp>
 
 #include "run_test_files.hpp"
+#include "test_compiler.hpp"
 
 namespace caliber {
 
@@ -67,6 +68,8 @@ int main(int argc, const char *argv[]) {
     return 1;
   }
 
+  caliber::test_compiler compiler("/tmp/caliber-XXXXXX");
+
   if(args.child_fd) {
     if(auto output_opt = has_option(output, vm)) {
       using namespace opts::command_line_style;
@@ -80,7 +83,7 @@ int main(int argc, const char *argv[]) {
       *args.child_fd, io::never_close_handle
     );
     log::child logger(fds);
-    caliber::run_test_files(args.files, logger, args.filters);
+    caliber::run_test_files(args.files, logger, compiler, args.filters);
     return 0;
   }
 
@@ -96,7 +99,7 @@ int main(int argc, const char *argv[]) {
   log::summary logger(out, progress_log.get(), args.show_time,
                       args.show_terminal);
 
-  caliber::run_test_files(args.files, logger, args.filters);
+  caliber::run_test_files(args.files, logger, compiler, args.filters);
 
   logger.summarize();
   return !logger.good();

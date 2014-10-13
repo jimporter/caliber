@@ -15,7 +15,8 @@ public:
 
   ~test_compiler();
 
-  int operator ()(const std::string &file, mettle::log::test_output &output);
+  int operator ()(const std::string &file,
+                  mettle::log::test_output &output) const;
 private:
   std::string temp_dir_;
 };

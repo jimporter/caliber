@@ -4,11 +4,13 @@
 #include <mettle/driver/filters.hpp>
 #include <mettle/driver/log/core.hpp>
 
+#include "test_compiler.hpp"
+
 namespace caliber {
 
 void run_test_files(
   const std::vector<std::string> &files, mettle::log::test_logger &logger,
-  const mettle::filter_set &filter
+  const test_compiler &compiler, const mettle::filter_set &filter
 );
 
 } // namespace caliber
