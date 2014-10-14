@@ -33,7 +33,7 @@ install: all
 	cp caliber $(PREFIX)/bin/caliber
 
 .PHONY: test
-test:
+test: caliber
 	./caliber --verbose 2 --color $(TESTS)
 
 .PHONY: clean
