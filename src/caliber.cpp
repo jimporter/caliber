@@ -10,6 +10,7 @@
 #include <mettle/driver/log/summary.hpp>
 #include <mettle/driver/log/term.hpp>
 
+#include "cmd_line.hpp"
 #include "run_test_files.hpp"
 #include "test_compiler.hpp"
 
@@ -57,8 +58,10 @@ int main(int argc, const char *argv[]) {
   }
 
   if(args.show_help) {
+    caliber::per_file_options tmp;
+    auto per_file = caliber::make_per_file_options(tmp);
     opts::options_description displayed;
-    displayed.add(generic).add(output).add(child);
+    displayed.add(generic).add(output).add(child).add(per_file);
     std::cout << displayed << std::endl;
     return 1;
   }
