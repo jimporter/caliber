@@ -37,8 +37,8 @@ namespace detail {
       opts::notify(vm);
     } catch(const std::exception &e) {
       logger.started_test(name);
-      logger.failed_test(name, std::string("Invalid command ") + e.what(), output,
-                         mettle::log::test_duration(0));
+      logger.failed_test(name, std::string("Invalid command: ") + e.what(),
+                         output, mettle::log::test_duration(0));
       return;
     }
 
