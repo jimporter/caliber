@@ -2,7 +2,10 @@
 
 #include <fstream>
 #include <iostream>
+
 #include <boost/program_options.hpp>
+#include <mettle/driver/cmd_line.hpp>
+#include <mettle/output.hpp>
 
 #include "cmd_line.hpp"
 #include "test_compiler.hpp"
@@ -27,16 +30,21 @@ namespace detail {
     mettle::log::test_output output;
 
     per_file_options args;
+    std::vector<std::string> compiler_args;
     try {
       namespace opts = boost::program_options;
-      opts::positional_options_description pos;
       auto options = make_per_file_options(args);
+      auto compiler_opts = make_compiler_options();
+      options.add(compiler_opts);
+
+      opts::positional_options_description pos;
       auto parsed = comment_parser(std::ifstream(file), "caliber")
         .options(options).positional(pos).run();
 
       opts::variables_map vm;
       opts::store(parsed, vm);
       opts::notify(vm);
+      compiler_args = mettle::filter_options(parsed, compiler_opts);
     } catch(const std::exception &e) {
       logger.started_test(name);
       logger.failed_test(name, std::string("Invalid command: ") + e.what(),
@@ -51,7 +59,7 @@ namespace detail {
 
     using namespace std::chrono;
     auto then = steady_clock::now();
-    int err = compiler(file, output);
+    int err = compiler(file, compiler_args, output);
     auto now = steady_clock::now();
     auto duration = duration_cast<mettle::log::test_duration>(now - then);
 

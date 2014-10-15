@@ -49,13 +49,26 @@ extract_comment(std::istream &is, const std::string &name) {
 boost::program_options::options_description
 make_per_file_options(per_file_options &opts) {
   using namespace boost::program_options;
-  options_description child("Per-file options");
-  child.add_options()
+  options_description desc("Per-file options");
+  desc.add_options()
     ("fail,F", value(&opts.expect_fail)->zero_tokens(),
      "expect the test to fail")
     ("name,n", value(&opts.name), "the test's name")
   ;
-  return child;
+  return desc;
+}
+
+boost::program_options::options_description
+make_compiler_options() {
+  using namespace boost::program_options;
+  options_description desc;
+  desc.add_options()
+    (",I", value<std::vector<std::string>>(),
+     "add a directory to the include search path")
+    (",D", value<std::vector<std::string>>(), "pre-define a macro")
+    (",U", value<std::vector<std::string>>(), "undefine a macro")
+  ;
+  return desc;
 }
 
 } // namespace caliber

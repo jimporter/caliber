@@ -11,6 +11,14 @@
 
 namespace caliber {
 
+std::unique_ptr<char *[]>
+make_argv(const std::vector<std::string> &argv) {
+  auto real_argv = std::make_unique<char *[]>(argv.size() + 1);
+  for(size_t i = 0; i != argv.size(); i++)
+    real_argv[i] = const_cast<char*>(argv[i].c_str());
+  return real_argv;
+}
+
 namespace {
   inline int parent_failed() {
     return 1;
@@ -22,6 +30,7 @@ namespace {
 }
 
 int test_compiler::operator ()(const std::string &file,
+                               const std::vector<std::string> &args,
                                mettle::log::test_output &output) const {
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
   if(stdout_pipe.open() < 0 ||
@@ -47,7 +56,13 @@ int test_compiler::operator ()(const std::string &file,
        stderr_pipe.close_write() < 0)
       child_failed();
 
-    execlp("clang++", "clang++", "-fsyntax-only", file.c_str(), nullptr);
+    std::vector<std::string> final_args = {
+      "clang++", "-fsyntax-only", file
+    };
+    final_args.insert(final_args.end(), args.begin(), args.end());
+    auto argv = make_argv(final_args);
+
+    execvp("clang++", argv.get());
     child_failed();
   }
   else {

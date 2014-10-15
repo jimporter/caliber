@@ -2,6 +2,7 @@
 #define INC_CALIBER_SRC_TEST_COMPILER_HPP
 
 #include <string>
+#include <vector>
 
 #include <mettle/driver/log/core.hpp>
 
@@ -14,6 +15,7 @@ public:
   test_compiler & operator =(const test_compiler &) = delete;
 
   int operator ()(const std::string &file,
+                  const std::vector<std::string> &args,
                   mettle::log::test_output &output) const;
 };
 

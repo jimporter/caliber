@@ -42,6 +42,9 @@ struct per_file_options {
 boost::program_options::options_description
 make_per_file_options(per_file_options &opts);
 
+boost::program_options::options_description
+make_compiler_options();
+
 } // namespace caliber
 
 #endif

@@ -60,6 +60,8 @@ int main(int argc, const char *argv[]) {
   if(args.show_help) {
     caliber::per_file_options tmp;
     auto per_file = caliber::make_per_file_options(tmp);
+    per_file.add(caliber::make_compiler_options());
+
     opts::options_description displayed;
     displayed.add(generic).add(output).add(child).add(per_file);
     std::cout << displayed << std::endl;
