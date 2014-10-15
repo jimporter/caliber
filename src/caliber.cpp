@@ -71,7 +71,7 @@ int main(int argc, const char *argv[]) {
     return 1;
   }
 
-  caliber::test_compiler compiler("/tmp/caliber-XXXXXX");
+  caliber::test_compiler compiler;
 
   if(args.child_fd) {
     if(auto output_opt = has_option(output, vm)) {

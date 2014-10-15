@@ -9,16 +9,12 @@ namespace caliber {
 
 class test_compiler {
 public:
-  test_compiler(std::string temp_dir);
+  test_compiler() = default;
   test_compiler(const test_compiler &) = delete;
   test_compiler & operator =(const test_compiler &) = delete;
 
-  ~test_compiler();
-
   int operator ()(const std::string &file,
                   mettle::log::test_output &output) const;
-private:
-  std::string temp_dir_;
 };
 
 } // namespace caliber

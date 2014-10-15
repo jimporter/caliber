@@ -21,16 +21,6 @@ namespace {
   }
 }
 
-test_compiler::test_compiler(std::string temp_dir)
-  : temp_dir_(std::move(temp_dir)) {
-  mkdtemp(&temp_dir_.front());
-}
-
-test_compiler::~test_compiler() {
-  // XXX: Jesus Christ how horrifying.
-  system(("rm -rf '" + temp_dir_ + "'").c_str());
-}
-
 int test_compiler::operator ()(const std::string &file,
                                mettle::log::test_output &output) const {
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
@@ -57,14 +47,7 @@ int test_compiler::operator ()(const std::string &file,
        stderr_pipe.close_write() < 0)
       child_failed();
 
-    char abs_file[PATH_MAX+1];
-    if(realpath(file.c_str(), abs_file) == 0)
-      child_failed();
-
-    if(chdir(temp_dir_.c_str()) < 0)
-      child_failed();
-
-    execlp("clang++", "clang++", "-c", abs_file, nullptr);
+    execlp("clang++", "clang++", "-fsyntax-only", file.c_str(), nullptr);
     child_failed();
   }
   else {
