@@ -29,11 +29,13 @@ namespace detail {
     per_file_options args;
     try {
       namespace opts = boost::program_options;
+      opts::positional_options_description pos;
+      auto options = make_per_file_options(args);
+      auto parsed = comment_parser(std::ifstream(file), "caliber")
+        .options(options).positional(pos).run();
 
       opts::variables_map vm;
-      opts::store(parse_comment(
-        std::ifstream(file), "caliber", make_per_file_options(args)
-      ), vm);
+      opts::store(parsed, vm);
       opts::notify(vm);
     } catch(const std::exception &e) {
       logger.started_test(name);
