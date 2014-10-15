@@ -29,8 +29,7 @@ namespace {
   }
 }
 
-int test_compiler::operator ()(const std::string &file,
-                               const std::vector<std::string> &args,
+int test_compiler::operator ()(const std::string &file, const args_type &args,
                                mettle::log::test_output &output) const {
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
   if(stdout_pipe.open() < 0 ||
@@ -59,7 +58,10 @@ int test_compiler::operator ()(const std::string &file,
     std::vector<std::string> final_args = {
       "clang++", "-fsyntax-only", file
     };
-    final_args.insert(final_args.end(), args.begin(), args.end());
+    for(const auto &i : args) {
+      final_args.push_back(i.string_key);
+      final_args.insert(final_args.end(), i.value.begin(), i.value.end());
+    }
     auto argv = make_argv(final_args);
 
     execvp("clang++", argv.get());

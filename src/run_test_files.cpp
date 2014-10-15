@@ -18,6 +18,19 @@ namespace detail {
     return id_++;
   }
 
+  template<typename Char>
+  std::vector<boost::program_options::basic_option<Char>> filter_options(
+    const boost::program_options::basic_parsed_options<Char> &parsed,
+    const boost::program_options::options_description &desc
+  ) {
+    std::vector<boost::program_options::basic_option<Char>> filtered;
+    for(auto &&option : parsed.options) {
+      if(desc.find_nothrow(option.string_key, false))
+        filtered.push_back(option);
+    }
+    return filtered;
+  }
+
   namespace {
     const std::vector<std::string> test_suite = {"Compilation tests"};
   }
@@ -30,7 +43,7 @@ namespace detail {
     mettle::log::test_output output;
 
     per_file_options args;
-    std::vector<std::string> compiler_args;
+    test_compiler::args_type compiler_args;
     try {
       namespace opts = boost::program_options;
       auto options = make_per_file_options(args);
@@ -44,7 +57,7 @@ namespace detail {
       opts::variables_map vm;
       opts::store(parsed, vm);
       opts::notify(vm);
-      compiler_args = mettle::filter_options(parsed, compiler_opts);
+      compiler_args = filter_options(parsed, compiler_opts);
     } catch(const std::exception &e) {
       logger.started_test(name);
       logger.failed_test(name, std::string("Invalid command: ") + e.what(),
