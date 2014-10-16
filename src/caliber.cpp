@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <vector>
 
@@ -73,7 +74,9 @@ int main(int argc, const char *argv[]) {
     return 1;
   }
 
-  caliber::test_compiler compiler;
+  auto cc = getenv("CC");
+  auto cxx = getenv("CXX");
+  caliber::test_compiler compiler(cc ? cc : "cc", cxx ? cxx : "c++");
 
   if(args.child_fd) {
     if(auto output_opt = has_option(output, vm)) {

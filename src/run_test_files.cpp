@@ -4,8 +4,6 @@
 #include <iostream>
 
 #include <boost/program_options.hpp>
-#include <mettle/driver/cmd_line.hpp>
-#include <mettle/output.hpp>
 
 #include "cmd_line.hpp"
 #include "test_compiler.hpp"

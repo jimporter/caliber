@@ -6,8 +6,11 @@
 #include <unistd.h>
 
 #include <cstdlib>
+#include <regex>
+#include <iostream>
 
 #include <mettle/driver/scoped_pipe.hpp>
+#include <mettle/output.hpp>
 
 namespace caliber {
 
@@ -29,6 +32,9 @@ namespace {
   }
 }
 
+test_compiler::test_compiler(std::string cc, std::string cxx)
+  : cc_(cc), cxx_(cxx) {}
+
 int test_compiler::operator ()(const std::string &file, const args_type &args,
                                mettle::log::test_output &output) const {
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
@@ -38,6 +44,16 @@ int test_compiler::operator ()(const std::string &file, const args_type &args,
 
   fflush(nullptr);
 
+  const auto &compiler = is_cxx(file) ? cxx_ : cc_;
+  std::vector<std::string> final_args = {
+    compiler.c_str(), "-fsyntax-only", file
+  };
+  for(const auto &i : args) {
+    final_args.push_back(i.string_key);
+    final_args.insert(final_args.end(), i.value.begin(), i.value.end());
+  }
+
+  // XXX: Handle timeouts
   pid_t pid;
   if((pid = fork()) < 0)
     return parent_failed();
@@ -55,16 +71,7 @@ int test_compiler::operator ()(const std::string &file, const args_type &args,
        stderr_pipe.close_write() < 0)
       child_failed();
 
-    std::vector<std::string> final_args = {
-      "clang++", "-fsyntax-only", file
-    };
-    for(const auto &i : args) {
-      final_args.push_back(i.string_key);
-      final_args.insert(final_args.end(), i.value.begin(), i.value.end());
-    }
-    auto argv = make_argv(final_args);
-
-    execvp("clang++", argv.get());
+    execvp(compiler.c_str(), make_argv(final_args).get());
     child_failed();
   }
   else {
@@ -106,6 +113,11 @@ int test_compiler::operator ()(const std::string &file, const args_type &args,
     else
       return 128;
   }
+}
+
+bool test_compiler::is_cxx(const std::string &file) {
+  static std::regex cxx_re("\\.(cc|cp|cxx|cpp|CPP|c\\+\\+|C|ii)$");
+  return std::regex_search(file, cxx_re);
 }
 
 } // namespace caliber
