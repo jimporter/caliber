@@ -17,7 +17,7 @@
 namespace caliber {
 
 namespace {
-  static constexpr int err_timeout = 64;
+  constexpr int err_timeout = 64;
 }
 
 std::unique_ptr<char *[]>
