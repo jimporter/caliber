@@ -2,29 +2,43 @@
 
 #include <fcntl.h>
 #include <poll.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include <cstdlib>
 #include <regex>
-#include <iostream>
+#include <sstream>
+#include <thread>
 
 #include <mettle/driver/scoped_pipe.hpp>
 #include <mettle/output.hpp>
 
 namespace caliber {
 
-std::unique_ptr<char *[]>
-make_argv(const std::vector<std::string> &argv) {
-  auto real_argv = std::make_unique<char *[]>(argv.size() + 1);
-  for(size_t i = 0; i != argv.size(); i++)
-    real_argv[i] = const_cast<char*>(argv[i].c_str());
-  return real_argv;
-}
+namespace detail {
 
-namespace {
-  inline int parent_failed() {
-    return 1;
+  std::unique_ptr<char *[]>
+  make_argv(const std::vector<std::string> &argv) {
+    auto real_argv = std::make_unique<char *[]>(argv.size() + 1);
+    for(size_t i = 0; i != argv.size(); i++)
+      real_argv[i] = const_cast<char*>(argv[i].c_str());
+    return real_argv;
+  }
+
+  inline std::string err_string(int errnum) {
+    char buf[256];
+#ifdef _GNU_SOURCE
+    return strerror_r(errnum, buf, sizeof(buf));
+#else
+    if(strerror_r(errnum, buf, sizeof(buf)) < 0)
+      return "";
+    return buf;
+#endif
+  }
+
+  inline mettle::test_result parent_failed() {
+    return { false, err_string(errno) };
   }
 
   [[noreturn]] inline void child_failed() {
@@ -32,11 +46,13 @@ namespace {
   }
 }
 
-test_compiler::test_compiler(std::string cc, std::string cxx)
-  : cc_(cc), cxx_(cxx) {}
+mettle::test_result
+test_compiler::operator ()(
+  const std::string &file, const args_type &args, bool expect_fail,
+  mettle::log::test_output &output
+) const {
+  using namespace detail;
 
-int test_compiler::operator ()(const std::string &file, const args_type &args,
-                               mettle::log::test_output &output) const {
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
   if(stdout_pipe.open() < 0 ||
      stderr_pipe.open() < 0)
@@ -53,12 +69,14 @@ int test_compiler::operator ()(const std::string &file, const args_type &args,
     final_args.insert(final_args.end(), i.value.begin(), i.value.end());
   }
 
-  // XXX: Handle timeouts
   pid_t pid;
   if((pid = fork()) < 0)
     return parent_failed();
 
   if(pid == 0) {
+    if(timeout_)
+      fork_watcher(*timeout_);
+
     if(stdout_pipe.close_read() < 0 ||
        stderr_pipe.close_read() < 0)
       child_failed();
@@ -108,16 +126,70 @@ int test_compiler::operator ()(const std::string &file, const args_type &args,
     if(waitpid(pid, &status, 0) < 0)
       return parent_failed();
 
-    if(WIFEXITED(status))
-      return WEXITSTATUS(status);
-    else
-      return 128;
+    if(WIFEXITED(status)) {
+      int exit_code = WEXITSTATUS(status);
+      if(exit_code == 2) {
+        std::ostringstream ss;
+        ss << "Timed out after " << timeout_->count() << " ms";
+        return { false, ss.str() };
+      }
+      else if(bool(exit_code) == expect_fail) {
+        return { true, "" };
+      }
+      else if(exit_code) {
+        return { false, "Compilation failed" };
+      }
+      else {
+        return { false, "Compilation successful" };
+      }
+    }
+    else if(WIFSIGNALED(status)) {
+      return { false, strsignal(WTERMSIG(status)) };
+    }
+    else { // WIFSTOPPED
+      return { false, "Stopped" };
+    }
   }
 }
 
 bool test_compiler::is_cxx(const std::string &file) {
   static std::regex cxx_re("\\.(cc|cp|cxx|cpp|CPP|c\\+\\+|C|ii)$");
   return std::regex_search(file, cxx_re);
+}
+
+void test_compiler::fork_watcher(std::chrono::milliseconds timeout) {
+  pid_t watcher_pid;
+  if((watcher_pid = fork()) < 0)
+    goto fail;
+  if(watcher_pid == 0) {
+    std::this_thread::sleep_for(timeout);
+    _exit(2);
+  }
+
+  pid_t test_pid;
+  if((test_pid = fork()) < 0) {
+    kill(watcher_pid, SIGKILL);
+    goto fail;
+  }
+  if(test_pid != 0) {
+    // Wait for the first child process (the watcher or the test) to finish,
+    // and kill the other one.
+    int status;
+    pid_t exited_pid = wait(&status);
+    kill(exited_pid == test_pid ? watcher_pid : test_pid, SIGKILL);
+    wait(nullptr);
+
+    if(WIFEXITED(status))
+      _exit(WEXITSTATUS(status));
+    else if(WIFSIGNALED(status))
+      raise(WTERMSIG(status));
+    else // WIFSTOPPED
+      _exit(128); // XXX: not sure what to do here
+  }
+
+  return;
+fail:
+  _exit(128);
 }
 
 } // namespace caliber

@@ -70,16 +70,14 @@ namespace detail {
 
     using namespace std::chrono;
     auto then = steady_clock::now();
-    int err = compiler(file, compiler_args, output);
+    auto result = compiler(file, compiler_args, args.expect_fail, output);
     auto now = steady_clock::now();
     auto duration = duration_cast<mettle::log::test_duration>(now - then);
 
-    if(bool(err) == args.expect_fail)
+    if(result.passed)
       logger.passed_test(name, output, duration);
-    else if(err)
-      logger.failed_test(name, "Compilation failed", output, duration);
     else
-      logger.failed_test(name, "Compilation successful", output, duration);
+      logger.failed_test(name, result.message, output, duration);
   }
 }
 
