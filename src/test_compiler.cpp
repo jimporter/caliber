@@ -16,34 +16,35 @@
 
 namespace caliber {
 
-namespace detail {
+namespace {
+  static constexpr int err_timeout = 64;
+}
 
-  std::unique_ptr<char *[]>
-  make_argv(const std::vector<std::string> &argv) {
-    auto real_argv = std::make_unique<char *[]>(argv.size() + 1);
-    for(size_t i = 0; i != argv.size(); i++)
-      real_argv[i] = const_cast<char*>(argv[i].c_str());
-    return real_argv;
-  }
+std::unique_ptr<char *[]>
+make_argv(const std::vector<std::string> &argv) {
+  auto real_argv = std::make_unique<char *[]>(argv.size() + 1);
+  for(size_t i = 0; i != argv.size(); i++)
+    real_argv[i] = const_cast<char*>(argv[i].c_str());
+  return real_argv;
+}
 
-  inline std::string err_string(int errnum) {
-    char buf[256];
+inline std::string err_string(int errnum) {
+  char buf[256];
 #ifdef _GNU_SOURCE
-    return strerror_r(errnum, buf, sizeof(buf));
+  return strerror_r(errnum, buf, sizeof(buf));
 #else
-    if(strerror_r(errnum, buf, sizeof(buf)) < 0)
-      return "";
-    return buf;
+  if(strerror_r(errnum, buf, sizeof(buf)) < 0)
+    return "";
+  return buf;
 #endif
-  }
+}
 
-  inline mettle::test_result parent_failed() {
-    return { false, err_string(errno) };
-  }
+inline mettle::test_result parent_failed() {
+  return { false, err_string(errno) };
+}
 
-  [[noreturn]] inline void child_failed() {
-    _exit(128);
-  }
+[[noreturn]] inline void child_failed() {
+  _exit(128);
 }
 
 mettle::test_result
@@ -51,8 +52,6 @@ test_compiler::operator ()(
   const std::string &file, const args_type &args, bool expect_fail,
   mettle::log::test_output &output
 ) const {
-  using namespace detail;
-
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
   if(stdout_pipe.open() < 0 ||
      stderr_pipe.open() < 0)
@@ -128,7 +127,7 @@ test_compiler::operator ()(
 
     if(WIFEXITED(status)) {
       int exit_code = WEXITSTATUS(status);
-      if(exit_code == 2) {
+      if(exit_code == err_timeout) {
         std::ostringstream ss;
         ss << "Timed out after " << timeout_->count() << " ms";
         return { false, ss.str() };
@@ -163,7 +162,7 @@ void test_compiler::fork_watcher(std::chrono::milliseconds timeout) {
     goto fail;
   if(watcher_pid == 0) {
     std::this_thread::sleep_for(timeout);
-    _exit(2);
+    _exit(err_timeout);
   }
 
   pid_t test_pid;
