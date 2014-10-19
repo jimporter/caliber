@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <boost/program_options.hpp>
+#include <mettle/suite/attributes.hpp>
 
 namespace caliber {
 
@@ -37,6 +38,7 @@ parse_comment(std::istream &&s, const std::string &name,
 struct per_file_options {
   bool expect_fail = false;
   std::string name;
+  std::vector<std::string> attrs;
 };
 
 boost::program_options::options_description
@@ -44,6 +46,8 @@ make_per_file_options(per_file_options &opts);
 
 boost::program_options::options_description
 make_compiler_options();
+
+mettle::attributes make_attributes(const std::vector<std::string> &attrs);
 
 } // namespace caliber
 

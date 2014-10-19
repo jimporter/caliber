@@ -35,7 +35,7 @@ namespace detail {
 
   void run_test_file(
     const std::string &file, mettle::log::test_logger &logger,
-    const test_compiler &compiler, const mettle::filter_set &/*filter*/
+    const test_compiler &compiler, const mettle::filter_set &filter
   ) {
     mettle::test_name name = {test_suite, file, generate_id()};
     mettle::log::test_output output;
@@ -66,7 +66,20 @@ namespace detail {
     if(!args.name.empty())
       name.test = std::move(args.name);
 
+    auto attrs = make_attributes(args.attrs);
+    auto action = filter(name, attrs);
+    if(action.action == mettle::test_action::indeterminate)
+      action = filter_by_attr(attrs);
+
+    if(action.action == mettle::test_action::hide)
+      return;
+
     logger.started_test(name);
+
+    if(action.action == mettle::test_action::skip) {
+      logger.skipped_test(name, action.message);
+      return;
+    }
 
     using namespace std::chrono;
     auto then = steady_clock::now();
