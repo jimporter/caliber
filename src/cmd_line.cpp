@@ -21,6 +21,12 @@ namespace detail {
     }
     return strchr(ws, is.get());
   }
+
+  // A type whose only job is to be a placeholder for args that get forwarded to
+  // another command.
+  struct fwd_vector {};
+  void validate(boost::any &, const std::vector<std::string> &, fwd_vector *,
+                int) {}
 }
 
 std::vector<std::string>
@@ -66,10 +72,10 @@ make_compiler_options() {
   using namespace boost::program_options;
   options_description desc;
   desc.add_options()
-    (",I", value<std::vector<std::string>>(),
+    (",I", value<detail::fwd_vector>(),
      "add a directory to the include search path")
-    (",D", value<std::vector<std::string>>(), "pre-define a macro")
-    (",U", value<std::vector<std::string>>(), "undefine a macro")
+    (",D", value<detail::fwd_vector>(), "pre-define a macro")
+    (",U", value<detail::fwd_vector>(), "undefine a macro")
   ;
   return desc;
 }
