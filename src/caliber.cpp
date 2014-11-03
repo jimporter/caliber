@@ -23,6 +23,11 @@ namespace {
     METTLE_OPTIONAL_NS::optional<int> child_fd;
     std::vector<std::string> files;
   };
+
+  const char program_name[] = "caliber";
+  void report_error(const std::string &message) {
+    std::cerr << program_name << ": " << message << std::endl;
+  }
 }
 
 } // namespace caliber
@@ -54,8 +59,8 @@ int main(int argc, const char *argv[]) {
     opts::store(parsed, vm);
     opts::notify(vm);
   } catch(const std::exception &e) {
-    std::cerr << e.what() << std::endl;
-    return 1;
+    caliber::report_error(e.what());
+    return 2;
   }
 
   if(args.show_help) {
@@ -66,50 +71,56 @@ int main(int argc, const char *argv[]) {
     opts::options_description displayed;
     displayed.add(generic).add(output).add(child).add(per_file);
     std::cout << displayed << std::endl;
-    return 1;
-  }
-
-  if(args.files.empty()) {
-    std::cerr << "no inputs specified" << std::endl;
-    return 1;
-  }
-
-  auto cc = getenv("CC");
-  auto cxx = getenv("CXX");
-  caliber::test_compiler compiler(cc ? cc : "cc", cxx ? cxx : "c++",
-                                  args.timeout);
-
-  if(args.child_fd) {
-    if(auto output_opt = has_option(output, vm)) {
-      using namespace opts::command_line_style;
-      std::cerr << output_opt->canonical_display_name(allow_long)
-                << " can't be used with --child" << std::endl;
-      return 1;
-    }
-
-    namespace io = boost::iostreams;
-    io::stream<io::file_descriptor_sink> fds(
-      *args.child_fd, io::never_close_handle
-    );
-    log::child logger(fds);
-    caliber::run_test_files(args.files, logger, compiler, args.filters);
     return 0;
   }
 
-  if(args.no_fork && args.show_terminal) {
-    std::cerr << "--show-terminal requires forking tests" << std::endl;
+  if(args.files.empty()) {
+    caliber::report_error("no inputs specified");
     return 1;
   }
 
-  term::enable(std::cout, args.color);
-  indenting_ostream out(std::cout);
+  try {
+    auto cc = getenv("CC");
+    auto cxx = getenv("CXX");
+    caliber::test_compiler compiler(cc ? cc : "cc", cxx ? cxx : "c++",
+                                    args.timeout);
 
-  auto progress_log = make_progress_logger(out, args);
-  log::summary logger(out, progress_log.get(), args.show_time,
-                      args.show_terminal);
+    if(args.child_fd) {
+      if(auto output_opt = has_option(output, vm)) {
+        using namespace opts::command_line_style;
+        caliber::report_error(output_opt->canonical_display_name(allow_long) +
+                              " can't be used with --child");
+        return 2;
+      }
 
-  caliber::run_test_files(args.files, logger, compiler, args.filters);
+      namespace io = boost::iostreams;
+      io::stream<io::file_descriptor_sink> fds(
+        *args.child_fd, io::never_close_handle
+      );
+      log::child logger(fds);
+      caliber::run_test_files(args.files, logger, compiler, args.filters);
+      return 0;
+    }
 
-  logger.summarize();
-  return !logger.good();
+    if(args.no_fork && args.show_terminal) {
+      caliber::report_error("--show-terminal requires forking tests");
+      return 2;
+    }
+
+    term::enable(std::cout, args.color);
+    indenting_ostream out(std::cout);
+
+    auto progress_log = make_progress_logger(out, args);
+    log::summary logger(out, progress_log.get(), args.show_time,
+                        args.show_terminal);
+
+    caliber::run_test_files(args.files, logger, compiler, args.filters);
+
+    logger.summarize();
+    return !logger.good();
+  }
+  catch(const std::exception &e) {
+    caliber::report_error(e.what());
+    return 2;
+  }
 }

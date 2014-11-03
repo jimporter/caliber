@@ -14,6 +14,8 @@
 #include <mettle/driver/scoped_pipe.hpp>
 #include <mettle/output.hpp>
 
+#include "paths.hpp"
+
 namespace caliber {
 
 namespace {
@@ -47,6 +49,17 @@ inline mettle::test_result parent_failed() {
   _exit(128);
 }
 
+std::string test_compiler::tool::tool_name(const std::string &filename) {
+  std::unique_ptr<char, void (*)(void*)> linkname(
+    realpath(which(filename).c_str(), nullptr),
+    std::free
+  );
+  if(!linkname)
+    throw std::system_error(errno, std::system_category());
+
+  return leafname(linkname.get());
+}
+
 mettle::test_result
 test_compiler::operator ()(
   const std::string &file, const args_type &args, bool expect_fail,
@@ -61,7 +74,7 @@ test_compiler::operator ()(
 
   const auto &compiler = is_cxx(file) ? cxx_ : cc_;
   std::vector<std::string> final_args = {
-    compiler.c_str(), "-fsyntax-only", file
+    compiler.path.c_str(), "-fsyntax-only", file
   };
   for(const auto &i : args) {
     final_args.push_back(i.string_key);
@@ -95,7 +108,7 @@ test_compiler::operator ()(
        stderr_pipe.close_write() < 0)
       child_failed();
 
-    execvp(compiler.c_str(), make_argv(final_args).get());
+    execvp(compiler.path.c_str(), make_argv(final_args).get());
     child_failed();
   }
   else {

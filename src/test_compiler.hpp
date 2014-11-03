@@ -19,7 +19,7 @@ public:
 
   test_compiler(std::string cc, std::string cxx,
                 timeout_t timeout = {})
-    : cc_(cc), cxx_(cxx), timeout_(timeout) {}
+    : cc_(std::move(cc)), cxx_(std::move(cxx)), timeout_(timeout) {}
   test_compiler(const test_compiler &) = delete;
   test_compiler & operator =(const test_compiler &) = delete;
 
@@ -27,10 +27,19 @@ public:
   operator ()(const std::string &file, const args_type &args, bool expect_fail,
               mettle::log::test_output &output) const;
 private:
-  static void fork_watcher(std::chrono::milliseconds timeout);
-  static bool is_cxx(const std::string &file);
+  struct tool {
+    tool(std::string filename)
+      : path(std::move(filename)), name(tool_name(path)) {}
 
-  std::string cc_, cxx_;
+    std::string path, name;
+  private:
+    static std::string tool_name(const std::string &filename);
+  };
+
+  static bool is_cxx(const std::string &file);
+  static void fork_watcher(std::chrono::milliseconds timeout);
+
+  const tool cc_, cxx_;
   timeout_t timeout_;
 };
 
