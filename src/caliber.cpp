@@ -121,6 +121,6 @@ int main(int argc, const char *argv[]) {
   }
   catch(const std::exception &e) {
     caliber::report_error(e.what());
-    return 2;
+    return 3;
   }
 }
