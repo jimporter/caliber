@@ -40,7 +40,7 @@ test: caliber
 clean: clean-bin clean-obj
 
 .PHONY: clean-bin
-clean-src:
+clean-bin:
 	rm -f caliber
 
 .PHONY: clean-obj
