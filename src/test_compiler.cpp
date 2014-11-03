@@ -16,6 +16,8 @@
 
 #include "paths.hpp"
 
+#include <iostream>
+
 namespace caliber {
 
 namespace {
@@ -50,6 +52,7 @@ inline mettle::test_result parent_failed() {
 }
 
 std::string test_compiler::tool::tool_name(const std::string &filename) {
+  return "";
   std::unique_ptr<char, void (*)(void*)> linkname(
     realpath(which(filename).c_str(), nullptr),
     std::free
@@ -100,13 +103,19 @@ test_compiler::operator ()(
        stderr_pipe.close_read() < 0)
       child_failed();
 
-    if(dup2(stdout_pipe.write_fd, STDOUT_FILENO) < 0 ||
-       dup2(stderr_pipe.write_fd, STDERR_FILENO) < 0)
-      child_failed();
+    if(stdout_pipe.write_fd != STDOUT_FILENO) {
+      if(dup2(stdout_pipe.write_fd, STDOUT_FILENO) < 0)
+        child_failed();
+      if(stdout_pipe.close_write() < 0)
+        child_failed();
+    }
 
-    if(stdout_pipe.close_write() < 0 ||
-       stderr_pipe.close_write() < 0)
-      child_failed();
+    if(stderr_pipe.write_fd != STDERR_FILENO) {
+      if(dup2(stderr_pipe.write_fd, STDERR_FILENO) < 0)
+        child_failed();
+      if(stderr_pipe.close_write() < 0)
+        child_failed();
+    }
 
     execvp(compiler.path.c_str(), make_argv(final_args).get());
     child_failed();
