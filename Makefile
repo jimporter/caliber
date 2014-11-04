@@ -34,7 +34,7 @@ install: all
 
 .PHONY: test
 test: caliber
-	./caliber --verbose 2 --color $(TESTS)
+	mettle --verbose 2 --color "./caliber $(TESTS)"
 
 .PHONY: clean
 clean: clean-bin clean-obj
