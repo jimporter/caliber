@@ -15,7 +15,8 @@ namespace caliber {
 class test_compiler {
 public:
   using timeout_t = CALIBER_OPTIONAL_NS::optional<std::chrono::milliseconds>;
-  using args_type = std::vector<boost::program_options::option>;
+  using arg_type = boost::program_options::option;
+  using args_type = std::vector<arg_type>;
 
   test_compiler(std::string cc, std::string cxx,
                 timeout_t timeout = {})
@@ -38,6 +39,8 @@ private:
 
   static bool is_cxx(const std::string &file);
   static void fork_watcher(std::chrono::milliseconds timeout);
+
+  std::vector<std::string> translate_arg(const arg_type &arg) const;
 
   const tool cc_, cxx_;
   timeout_t timeout_;

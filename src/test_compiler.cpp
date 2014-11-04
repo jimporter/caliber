@@ -76,9 +76,9 @@ test_compiler::operator ()(
   std::vector<std::string> final_args = {
     compiler.path.c_str(), "-fsyntax-only", file
   };
-  for(const auto &i : args) {
-    final_args.push_back(i.string_key);
-    final_args.insert(final_args.end(), i.value.begin(), i.value.end());
+  for(const auto &arg : args) {
+    for(auto &&tok : translate_arg(arg))
+      final_args.push_back(std::move(tok));
   }
 
   pid_t pid;
@@ -233,6 +233,20 @@ void test_compiler::fork_watcher(std::chrono::milliseconds timeout) {
   }
   else {
     sigprocmask(SIG_SETMASK, &oldmask, nullptr);
+  }
+}
+
+std::vector<std::string>
+test_compiler::translate_arg(const arg_type &arg) const {
+  // XXX: This will eventually need to support different compiler front-ends.
+  if(arg.string_key == "std") {
+    return {"-std=" + arg.value.front()};
+  }
+  else {
+    std::vector<std::string> result;
+    result.push_back(arg.string_key);
+    result.insert(result.end(), arg.value.begin(), arg.value.end());
+    return result;
   }
 }
 

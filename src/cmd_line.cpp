@@ -22,8 +22,14 @@ namespace detail {
     return strchr(ws, is.get());
   }
 
-  // A type whose only job is to be a placeholder for args that get forwarded to
-  // another command.
+  // Some types whose only job is to be a placeholder for args that get
+  // forwarded to another command.
+  struct fwd_value {};
+  void validate(boost::any &v, const std::vector<std::string> &, fwd_value *,
+                int) {
+    boost::program_options::validators::check_first_occurrence(v);
+  }
+
   struct fwd_vector {};
   void validate(boost::any &, const std::vector<std::string> &, fwd_vector *,
                 int) {}
@@ -76,6 +82,7 @@ make_compiler_options() {
      "add a directory to the include search path")
     (",D", value<detail::fwd_vector>(), "pre-define a macro")
     (",U", value<detail::fwd_vector>(), "undefine a macro")
+    ("std", value<detail::fwd_value>(), "language standard")
   ;
   return desc;
 }
