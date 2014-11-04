@@ -16,8 +16,6 @@
 
 #include "paths.hpp"
 
-#include <iostream>
-
 namespace caliber {
 
 namespace {
@@ -52,7 +50,6 @@ inline mettle::test_result parent_failed() {
 }
 
 std::string test_compiler::tool::tool_name(const std::string &filename) {
-  return "";
   std::unique_ptr<char, void (*)(void*)> linkname(
     realpath(which(filename).c_str(), nullptr),
     std::free
