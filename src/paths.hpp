@@ -20,6 +20,8 @@
 namespace caliber {
 
 std::string which(const std::string &command);
+
+std::string parent_path(const CALIBER_STRING_VIEW &filename);
 std::string leafname(const CALIBER_STRING_VIEW &filename);
 
 } // namespace caliber

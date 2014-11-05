@@ -72,12 +72,13 @@ test_compiler::operator ()(
 
   fflush(nullptr);
 
+  std::string dir = parent_path(file);
   const auto &compiler = is_cxx(file) ? cxx_ : cc_;
   std::vector<std::string> final_args = {
     compiler.path.c_str(), "-fsyntax-only", file
   };
   for(const auto &arg : args) {
-    for(auto &&tok : translate_arg(arg))
+    for(auto &&tok : translate_arg(arg, dir))
       final_args.push_back(std::move(tok));
   }
 
@@ -237,10 +238,14 @@ void test_compiler::fork_watcher(std::chrono::milliseconds timeout) {
 }
 
 std::vector<std::string>
-test_compiler::translate_arg(const arg_type &arg) const {
+test_compiler::translate_arg(const arg_type &arg,
+                             const std::string &path) const {
   // XXX: This will eventually need to support different compiler front-ends.
   if(arg.string_key == "std") {
     return {"-std=" + arg.value.front()};
+  }
+  else if(arg.string_key == "-I") {
+    return {"-I", path + arg.value.front()};
   }
   else {
     std::vector<std::string> result;

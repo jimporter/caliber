@@ -40,7 +40,8 @@ private:
   static bool is_cxx(const std::string &file);
   static void fork_watcher(std::chrono::milliseconds timeout);
 
-  std::vector<std::string> translate_arg(const arg_type &arg) const;
+  std::vector<std::string>
+  translate_arg(const arg_type &arg, const std::string &path) const;
 
   const tool cc_, cxx_;
   timeout_t timeout_;
