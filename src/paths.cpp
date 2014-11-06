@@ -64,7 +64,7 @@ std::string parent_path(const CALIBER_STRING_VIEW &filename) {
   if(slash != CALIBER_STRING_VIEW::npos)
     return std::string(filename.substr(0, slash + 1));
   else
-    return std::string(filename);
+    return "";
 }
 
 std::string leafname(const CALIBER_STRING_VIEW &filename) {

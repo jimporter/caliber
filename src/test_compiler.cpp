@@ -49,7 +49,7 @@ inline mettle::test_result parent_failed() {
   _exit(128);
 }
 
-std::string test_compiler::tool::tool_name(const std::string &filename) {
+std::string tool::tool_name(const std::string &filename) {
   std::unique_ptr<char, void (*)(void*)> linkname(
     realpath(which(filename).c_str(), nullptr),
     std::free
