@@ -60,9 +60,34 @@ std::string tool::tool_name(const std::string &filename) {
   return leafname(linkname.get());
 }
 
+bool is_cxx(const std::string &file) {
+  static std::regex cxx_re("\\.(cc|cp|cxx|cpp|CPP|c\\+\\+|C|ii|mm|M|mii)$");
+  return std::regex_search(file, cxx_re);
+}
+
+std::vector<std::string>
+translate_args(const compiler_args &args, const std::string &path) {
+  // XXX: This will eventually need to support different compiler front-ends.
+  std::vector<std::string> result;
+  for(const auto &arg : args){
+    if(arg.string_key == "std") {
+      result.push_back("-std=" + arg.value.front());
+    }
+    else if(arg.string_key == "-I") {
+      result.push_back("-I");
+      result.push_back(path + arg.value.front());
+    }
+    else {
+      result.push_back(arg.string_key);
+      result.insert(result.end(), arg.value.begin(), arg.value.end());
+    }
+  }
+  return result;
+}
+
 mettle::test_result
 test_compiler::operator ()(
-  const std::string &file, const args_type &args, bool expect_fail,
+  const std::string &file, const compiler_args &args, bool expect_fail,
   mettle::log::test_output &output
 ) const {
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
@@ -77,10 +102,8 @@ test_compiler::operator ()(
   std::vector<std::string> final_args = {
     compiler.path.c_str(), "-fsyntax-only", file
   };
-  for(const auto &arg : args) {
-    for(auto &&tok : translate_arg(arg, dir))
-      final_args.push_back(std::move(tok));
-  }
+  for(auto &&tok : translate_args(args, dir))
+    final_args.push_back(std::move(tok));
 
   pid_t pid;
   if((pid = fork()) < 0)
@@ -179,11 +202,6 @@ test_compiler::operator ()(
   }
 }
 
-bool test_compiler::is_cxx(const std::string &file) {
-  static std::regex cxx_re("\\.(cc|cp|cxx|cpp|CPP|c\\+\\+|C|ii)$");
-  return std::regex_search(file, cxx_re);
-}
-
 void test_compiler::fork_watcher(std::chrono::milliseconds timeout) {
   pid_t watcher_pid;
   if((watcher_pid = fork()) < 0)
@@ -234,24 +252,6 @@ void test_compiler::fork_watcher(std::chrono::milliseconds timeout) {
   }
   else {
     sigprocmask(SIG_SETMASK, &oldmask, nullptr);
-  }
-}
-
-std::vector<std::string>
-test_compiler::translate_arg(const arg_type &arg,
-                             const std::string &path) const {
-  // XXX: This will eventually need to support different compiler front-ends.
-  if(arg.string_key == "std") {
-    return {"-std=" + arg.value.front()};
-  }
-  else if(arg.string_key == "-I") {
-    return {"-I", path + arg.value.front()};
-  }
-  else {
-    std::vector<std::string> result;
-    result.push_back(arg.string_key);
-    result.insert(result.end(), arg.value.begin(), arg.value.end());
-    return result;
   }
 }
 

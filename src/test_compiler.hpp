@@ -22,11 +22,16 @@ private:
   static std::string tool_name(const std::string &filename);
 };
 
+bool is_cxx(const std::string &file);
+
+using compiler_args = std::vector<boost::program_options::option>;
+
+std::vector<std::string>
+translate_args(const compiler_args &args, const std::string &path);
+
 class test_compiler {
 public:
   using timeout_t = CALIBER_OPTIONAL_NS::optional<std::chrono::milliseconds>;
-  using arg_type = boost::program_options::option;
-  using args_type = std::vector<arg_type>;
 
   test_compiler(tool cc, tool cxx, timeout_t timeout = {})
     : cc_(std::move(cc)), cxx_(std::move(cxx)), timeout_(timeout) {}
@@ -34,14 +39,10 @@ public:
   test_compiler & operator =(const test_compiler &) = delete;
 
   mettle::test_result
-  operator ()(const std::string &file, const args_type &args, bool expect_fail,
-              mettle::log::test_output &output) const;
+  operator ()(const std::string &file, const compiler_args &args,
+              bool expect_fail, mettle::log::test_output &output) const;
 private:
-  static bool is_cxx(const std::string &file);
   static void fork_watcher(std::chrono::milliseconds timeout);
-
-  std::vector<std::string>
-  translate_arg(const arg_type &arg, const std::string &path) const;
 
   const tool cc_, cxx_;
   timeout_t timeout_;

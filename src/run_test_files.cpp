@@ -41,7 +41,7 @@ namespace detail {
     mettle::log::test_output output;
 
     per_file_options args;
-    test_compiler::args_type compiler_args;
+    compiler_args comp_args;
     try {
       namespace opts = boost::program_options;
       auto options = make_per_file_options(args);
@@ -55,7 +55,7 @@ namespace detail {
       opts::variables_map vm;
       opts::store(parsed, vm);
       opts::notify(vm);
-      compiler_args = filter_options(parsed, compiler_opts);
+      comp_args = filter_options(parsed, compiler_opts);
     } catch(const std::exception &e) {
       logger.started_test(name);
       logger.failed_test(name, std::string("Invalid command: ") + e.what(),
@@ -83,7 +83,7 @@ namespace detail {
 
     using namespace std::chrono;
     auto then = steady_clock::now();
-    auto result = compiler(file, compiler_args, args.expect_fail, output);
+    auto result = compiler(file, comp_args, args.expect_fail, output);
     auto now = steady_clock::now();
     auto duration = duration_cast<mettle::log::test_duration>(now - then);
 

@@ -26,6 +26,7 @@ all: caliber
 	@rm -f $(TEMP)
 
 test/test_paths: src/paths.o
+test/test_test_compiler: src/paths.o src/test_compiler.o
 
 $(TESTS): %: %.o
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -lmettle -o $@
@@ -42,7 +43,8 @@ install: all
 
 .PHONY: test
 test: tests caliber
-	mettle --verbose 2 --color $(TESTS) "./caliber $(COMPILATION_TESTS)"
+	$(eval TEST_DATA := $(shell readlink -f test/test-data))
+	TEST_DATA=$(TEST_DATA) mettle --verbose 2 --color $(TESTS) "./caliber $(COMPILATION_TESTS)"
 
 .PHONY: clean
 clean: clean-bin clean-obj

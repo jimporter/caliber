@@ -5,12 +5,31 @@ using namespace mettle;
 suite<> paths("path utilities", [](auto &_) {
 
   subsuite<>(_, "which()", [](auto &_) {
-    _.test("filename", []() {
-      expect(caliber::which("sh"), equal_to("/bin/sh"));
+    std::string old_path;
+    std::string test_data;
+
+    _.setup([&old_path, &test_data]() {
+      const char *old = getenv("PATH");
+      const char *data = getenv("TEST_DATA");
+      if(old) old_path = old;
+
+      expect("TEST_DATA is in environment", data, is_not(nullptr));
+      test_data = data;
+
+      setenv("PATH", (test_data + ":" + old_path).c_str(), true);
     });
 
-    _.test("absolute path", []() {
-      expect(caliber::which("/bin/sh"), equal_to("/bin/sh"));
+    _.teardown([&old_path]() {
+      setenv("PATH", old_path.c_str(), true);
+    });
+
+    _.test("filename", [&test_data]() {
+      expect(caliber::which("program"), equal_to(test_data + "/program"));
+    });
+
+    _.test("absolute path", [&test_data]() {
+      std::string abspath = test_data + "/program";
+      expect(caliber::which(abspath), equal_to(abspath));
     });
 
     _.test("nonexistent file", []() {
