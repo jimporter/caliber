@@ -124,19 +124,9 @@ test_compiler::operator ()(
        stderr_pipe.close_read() < 0)
       child_failed();
 
-    if(stdout_pipe.write_fd != STDOUT_FILENO) {
-      if(dup2(stdout_pipe.write_fd, STDOUT_FILENO) < 0)
-        child_failed();
-      if(stdout_pipe.close_write() < 0)
-        child_failed();
-    }
-
-    if(stderr_pipe.write_fd != STDERR_FILENO) {
-      if(dup2(stderr_pipe.write_fd, STDERR_FILENO) < 0)
-        child_failed();
-      if(stderr_pipe.close_write() < 0)
-        child_failed();
-    }
+    if(stdout_pipe.move_write(STDOUT_FILENO) < 0 ||
+       stderr_pipe.move_write(STDERR_FILENO) < 0)
+      child_failed();
 
     execvp(compiler.path.c_str(), make_argv(final_args).get());
     child_failed();
