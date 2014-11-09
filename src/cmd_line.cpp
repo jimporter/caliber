@@ -67,8 +67,8 @@ make_per_file_options(per_file_options &opts) {
   desc.add_options()
     ("fail,F", value(&opts.expect_fail)->zero_tokens(),
      "expect the test to fail")
-    ("name,n", value(&opts.name), "the test's name")
-    ("attr,a", value(&opts.attrs), "the test's attributes")
+    ("name,n", value(&opts.name)->value_name("NAME"), "the test's name")
+    ("attr,a", value(&opts.attrs)->value_name("ATTR"), "the test's attributes")
   ;
   return desc;
 }
@@ -78,11 +78,12 @@ make_compiler_options() {
   using namespace boost::program_options;
   options_description desc;
   desc.add_options()
-    (",I", value<detail::fwd_vector>(),
+    (",I", value<detail::fwd_vector>()->value_name("PATH"),
      "add a directory to the include search path")
-    (",D", value<detail::fwd_vector>(), "pre-define a macro")
-    (",U", value<detail::fwd_vector>(), "undefine a macro")
-    ("std", value<detail::fwd_value>(), "language standard")
+    (",D", value<detail::fwd_vector>()->value_name("MACRO"),
+     "pre-define a macro")
+    (",U", value<detail::fwd_vector>()->value_name("MACRO"), "undefine a macro")
+    ("std", value<detail::fwd_value>()->value_name("LANG"), "language standard")
   ;
   return desc;
 }
