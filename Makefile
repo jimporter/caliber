@@ -6,6 +6,7 @@ PREFIX := /usr
 TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
 COMPILATION_TESTS := $(wildcard test/compilation/*.cpp)
 SOURCES := $(wildcard src/*.cpp)
+ALL_TESTS := $(TESTS) "./caliber $(COMPILATION_TESTS)"
 
 # Include all the existing dependency files for automatic #include dependency
 # handling.
@@ -44,7 +45,7 @@ install: all
 .PHONY: test
 test: tests caliber
 	$(eval TEST_DATA := $(shell readlink -f test/test-data))
-	TEST_DATA=$(TEST_DATA) mettle --verbose 2 --color $(TESTS) "./caliber $(COMPILATION_TESTS)"
+	TEST_DATA=$(TEST_DATA) mettle --output verbose --color $(ALL_TESTS)
 
 .PHONY: clean
 clean: clean-bin clean-obj
