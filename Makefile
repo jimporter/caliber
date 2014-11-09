@@ -45,7 +45,7 @@ install: all
 .PHONY: test
 test: tests caliber
 	$(eval TEST_DATA := $(shell readlink -f test/test-data))
-	TEST_DATA=$(TEST_DATA) mettle --output verbose --color $(ALL_TESTS)
+	TEST_DATA=$(TEST_DATA) mettle --output=verbose --color $(ALL_TESTS)
 
 .PHONY: clean
 clean: clean-bin clean-obj
