@@ -82,10 +82,8 @@ int main(int argc, const char *argv[]) {
   }
 
   try {
-    auto cc = getenv("CC");
     auto cxx = getenv("CXX");
-    caliber::test_compiler compiler(cc ? cc : "cc", cxx ? cxx : "c++",
-                                    args.timeout);
+    caliber::test_compiler compiler(cxx ? cxx : "c++", args.timeout);
 
     if(args.child_fd) {
       if(auto output_opt = has_option(output, vm)) {

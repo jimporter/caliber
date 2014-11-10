@@ -60,11 +60,6 @@ std::string tool::tool_name(const std::string &filename) {
   return leafname(linkname.get());
 }
 
-bool is_cxx(const std::string &file) {
-  static std::regex cxx_re("\\.(cc|cp|cxx|cpp|CPP|c\\+\\+|C|ii|mm|M|mii)$");
-  return std::regex_search(file, cxx_re);
-}
-
 std::vector<std::string>
 translate_args(const compiler_args &args, const std::string &path) {
   // XXX: This will eventually need to support different compiler front-ends.
@@ -98,9 +93,8 @@ test_compiler::operator ()(
   fflush(nullptr);
 
   std::string dir = parent_path(file);
-  const auto &compiler = is_cxx(file) ? cxx_ : cc_;
   std::vector<std::string> final_args = {
-    compiler.path.c_str(), "-fsyntax-only", file
+    compiler_.path.c_str(), "-fsyntax-only", file
   };
   for(auto &&tok : translate_args(args, dir))
     final_args.push_back(std::move(tok));
@@ -128,7 +122,7 @@ test_compiler::operator ()(
        stderr_pipe.move_write(STDERR_FILENO) < 0)
       child_failed();
 
-    execvp(compiler.path.c_str(), make_argv(final_args).get());
+    execvp(compiler_.path.c_str(), make_argv(final_args).get());
     child_failed();
   }
   else {

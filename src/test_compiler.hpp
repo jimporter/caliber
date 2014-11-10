@@ -22,8 +22,6 @@ private:
   static std::string tool_name(const std::string &filename);
 };
 
-bool is_cxx(const std::string &file);
-
 using compiler_args = std::vector<boost::program_options::option>;
 
 std::vector<std::string>
@@ -33,8 +31,8 @@ class test_compiler {
 public:
   using timeout_t = CALIBER_OPTIONAL_NS::optional<std::chrono::milliseconds>;
 
-  test_compiler(tool cc, tool cxx, timeout_t timeout = {})
-    : cc_(std::move(cc)), cxx_(std::move(cxx)), timeout_(timeout) {}
+  test_compiler(tool compiler, timeout_t timeout = {})
+    : compiler_(std::move(compiler)), timeout_(timeout) {}
   test_compiler(const test_compiler &) = delete;
   test_compiler & operator =(const test_compiler &) = delete;
 
@@ -44,7 +42,7 @@ public:
 private:
   static void fork_watcher(std::chrono::milliseconds timeout);
 
-  const tool cc_, cxx_;
+  const tool compiler_;
   timeout_t timeout_;
 };
 
