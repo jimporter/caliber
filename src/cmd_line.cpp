@@ -69,6 +69,8 @@ make_per_file_options(per_file_options &opts) {
      "expect the test to fail")
     ("name,n", value(&opts.name)->value_name("NAME"), "the test's name")
     ("attr,a", value(&opts.attrs)->value_name("ATTR"), "the test's attributes")
+    ("tool,t", value(&opts.tools)->value_name("NAME"),
+     "the tool to use for this test")
   ;
   return desc;
 }

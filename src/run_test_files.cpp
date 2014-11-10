@@ -22,11 +22,21 @@ namespace detail {
     const boost::program_options::options_description &desc
   ) {
     std::vector<boost::program_options::basic_option<Char>> filtered;
-    for(auto &&option : parsed.options) {
+    for(const auto &option : parsed.options) {
       if(desc.find_nothrow(option.string_key, false))
         filtered.push_back(option);
     }
     return filtered;
+  }
+
+  bool tool_match_any(const tool &t, const std::vector<std::string> &names) {
+    if(names.empty())
+      return true;
+    for(const auto &name : names) {
+      if(tool_match(t, name))
+        return true;
+    }
+    return false;
   }
 
   namespace {
@@ -58,9 +68,10 @@ namespace detail {
       comp_args = filter_options(parsed, compiler_opts);
     } catch(const std::exception &e) {
       logger.started_test(name);
-      logger.failed_test(name, std::string("Invalid command: ") + e.what(),
-                         output, mettle::log::test_duration(0));
-      return;
+      return logger.failed_test(
+        name, std::string("Invalid command: ") + e.what(), output,
+        mettle::log::test_duration(0)
+      );
     }
 
     if(!args.name.empty())
@@ -76,9 +87,12 @@ namespace detail {
 
     logger.started_test(name);
 
-    if(action.action == mettle::test_action::skip) {
-      logger.skipped_test(name, action.message);
-      return;
+    if(action.action == mettle::test_action::skip)
+      return logger.skipped_test(name, action.message);
+    if(!tool_match_any(compiler.tool(), args.tools)) {
+      return logger.skipped_test(
+        name, "test skipped for " + compiler.tool().identity[0]
+      );
     }
 
     using namespace std::chrono;

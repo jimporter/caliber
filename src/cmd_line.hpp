@@ -39,6 +39,7 @@ struct per_file_options {
   bool expect_fail = false;
   std::string name;
   std::vector<std::string> attrs;
+  std::vector<std::string> tools;
 };
 
 boost::program_options::options_description

@@ -23,10 +23,14 @@ public:
   mettle::test_result
   operator ()(const std::string &file, const compiler_args &args,
               bool expect_fail, mettle::log::test_output &output) const;
+
+  const tool & tool() const {
+    return compiler_;
+  }
 private:
   static void fork_watcher(std::chrono::milliseconds timeout);
 
-  const tool compiler_;
+  const struct tool compiler_;
   timeout_t timeout_;
 };
 
