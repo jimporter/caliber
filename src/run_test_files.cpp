@@ -10,7 +10,9 @@
 
 namespace caliber {
 
-namespace detail {
+namespace {
+  const std::vector<std::string> test_suite = {"Compilation tests"};
+
   inline uint64_t generate_id() {
     static std::atomic<uint64_t> id_(0);
     return id_++;
@@ -37,10 +39,6 @@ namespace detail {
         return true;
     }
     return false;
-  }
-
-  namespace {
-    const std::vector<std::string> test_suite = {"Compilation tests"};
   }
 
   void run_test_file(
@@ -113,12 +111,12 @@ void run_test_files(
   const test_compiler &compiler, const mettle::filter_set &filter
 ) {
   logger.started_run();
-  logger.started_suite(detail::test_suite);
+  logger.started_suite(test_suite);
 
   for(const auto &file : files)
-    detail::run_test_file(file, logger, compiler, filter);
+    run_test_file(file, logger, compiler, filter);
 
-  logger.ended_suite(detail::test_suite);
+  logger.ended_suite(test_suite);
   logger.ended_run();
 }
 

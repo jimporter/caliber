@@ -4,7 +4,7 @@
 
 namespace caliber {
 
-namespace detail {
+namespace {
   inline std::string readline(std::istream &is, char delim = '\n') {
     std::string line;
     std::getline(is, line, delim);
@@ -40,14 +40,14 @@ extract_comment(std::istream &is, const std::string &name) {
   if(is.get() == '/') {
     char c = is.get();
     if(c == '/') {
-      if(detail::matches_name(is, name))
-        return boost::program_options::split_unix(detail::readline(is));
+      if(matches_name(is, name))
+        return boost::program_options::split_unix(readline(is));
     }
     else if(c == '*') {
-      if(detail::matches_name(is, name, " \t\n\r")) {
+      if(matches_name(is, name, " \t\n\r")) {
         std::string comment;
         while(true) {
-          comment += detail::readline(is, '*');
+          comment += readline(is, '*');
           if(is.peek() == '/')
             return boost::program_options::split_unix(comment, " \t\n\r");
           else
@@ -80,12 +80,11 @@ make_compiler_options() {
   using namespace boost::program_options;
   options_description desc;
   desc.add_options()
-    (",I", value<detail::fwd_vector>()->value_name("PATH"),
+    (",I", value<fwd_vector>()->value_name("PATH"),
      "add a directory to the include search path")
-    (",D", value<detail::fwd_vector>()->value_name("MACRO"),
-     "pre-define a macro")
-    (",U", value<detail::fwd_vector>()->value_name("MACRO"), "undefine a macro")
-    ("std", value<detail::fwd_value>()->value_name("LANG"), "language standard")
+    (",D", value<fwd_vector>()->value_name("MACRO"), "pre-define a macro")
+    (",U", value<fwd_vector>()->value_name("MACRO"), "undefine a macro")
+    ("std", value<fwd_value>()->value_name("LANG"), "language standard")
   ;
   return desc;
 }
