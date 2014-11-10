@@ -1,38 +1,22 @@
 #include <mettle.hpp>
-#include "../src/paths.hpp"
 using namespace mettle;
+
+#include "env_helper.hpp"
+#include "../src/paths.hpp"
 
 suite<> paths("path utilities", [](auto &_) {
 
-  subsuite<>(_, "which()", [](auto &_) {
-    std::string old_path;
-    std::string test_data;
-
-    _.setup([&old_path, &test_data]() {
-      const char *old = getenv("PATH");
-      const char *data = getenv("TEST_DATA");
-      if(old) old_path = old;
-
-      expect("TEST_DATA is in environment", data, is_not(nullptr));
-      test_data = data;
-
-      setenv("PATH", (test_data + ":" + old_path).c_str(), true);
+  subsuite<test_env>(_, "which()", [](auto &_) {
+    _.test("filename", [](test_env &env) {
+      expect(caliber::which("g++-1.0"), equal_to(env.test_data + "/g++-1.0"));
     });
 
-    _.teardown([&old_path]() {
-      setenv("PATH", old_path.c_str(), true);
-    });
-
-    _.test("filename", [&test_data]() {
-      expect(caliber::which("program"), equal_to(test_data + "/program"));
-    });
-
-    _.test("absolute path", [&test_data]() {
-      std::string abspath = test_data + "/program";
+    _.test("absolute path", [](test_env &env) {
+      std::string abspath = env.test_data + "/g++-1.0";
       expect(caliber::which(abspath), equal_to(abspath));
     });
 
-    _.test("nonexistent file", []() {
+    _.test("nonexistent file", [](test_env &) {
       expect(
         []() { caliber::which("this_file_doesnt_exist"); },
         thrown<std::runtime_error>(

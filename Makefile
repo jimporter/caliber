@@ -27,7 +27,7 @@ all: caliber
 	@rm -f $(TEMP)
 
 test/test_paths: src/paths.o
-test/test_test_compiler: src/paths.o src/test_compiler.o
+test/test_tool: src/paths.o src/tool.o
 
 $(TESTS): %: %.o
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -lmettle -o $@
