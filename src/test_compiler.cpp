@@ -51,7 +51,8 @@ inline mettle::test_result parent_failed() {
 
 mettle::test_result
 test_compiler::operator ()(
-  const std::string &file, const compiler_args &args, bool expect_fail,
+  const std::string &file, const compiler_options &args,
+  const raw_options &raw_args, bool expect_fail,
   mettle::log::test_output &output
 ) const {
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
@@ -67,6 +68,10 @@ test_compiler::operator ()(
   };
   for(auto &&tok : translate_args(args, dir))
     final_args.push_back(std::move(tok));
+  for(const auto &arg : raw_args) {
+    if(tool_match(compiler_, arg.tool))
+      final_args.push_back(arg.value);
+  }
 
   pid_t pid;
   if((pid = fork()) < 0)

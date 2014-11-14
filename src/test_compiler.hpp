@@ -21,8 +21,9 @@ public:
   test_compiler & operator =(const test_compiler &) = delete;
 
   mettle::test_result
-  operator ()(const std::string &file, const compiler_args &args,
-              bool expect_fail, mettle::log::test_output &output) const;
+  operator ()(const std::string &file, const compiler_options &args,
+              const raw_options &raw_args, bool expect_fail,
+              mettle::log::test_output &output) const;
 
   const tool & tool() const {
     return compiler_;

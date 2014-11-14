@@ -71,6 +71,8 @@ make_per_file_options(per_file_options &opts) {
     ("attr,a", value(&opts.attrs)->value_name("ATTR"), "the test's attributes")
     ("tool,t", value(&opts.tools)->value_name("NAME"),
      "the tool to use for this test")
+    (",X", value(&opts.raw_args)->value_name("TOOL=OPTION"),
+     "forward untranslated argument directly to the tool being used")
   ;
   return desc;
 }
@@ -129,6 +131,24 @@ mettle::attributes make_attributes(const std::vector<std::string> &attrs) {
     final.insert({**attr, {}});
   }
   return final;
+}
+
+void validate(boost::any &v, const std::vector<std::string> &values,
+              raw_option *, int) {
+  using namespace boost::program_options;
+  validators::check_first_occurrence(v);
+  const std::string &val = validators::get_single_string(values);
+
+  try {
+    size_t i = val.find('=');
+    if(i != std::string::npos)
+      v = raw_option{val.substr(0, i), val.substr(i + 1)};
+    else
+      v = raw_option{"", val};
+  }
+  catch(...) {
+    boost::throw_exception(invalid_option_value(val));
+  }
 }
 
 } // namespace caliber

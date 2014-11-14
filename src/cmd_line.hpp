@@ -8,6 +8,8 @@
 #include <boost/program_options.hpp>
 #include <mettle/suite/attributes.hpp>
 
+#include "tool.hpp"
+
 namespace caliber {
 
 std::vector<std::string>
@@ -40,6 +42,7 @@ struct per_file_options {
   std::string name;
   std::vector<std::string> attrs;
   std::vector<std::string> tools;
+  raw_options raw_args;
 };
 
 boost::program_options::options_description
@@ -49,6 +52,9 @@ boost::program_options::options_description
 make_compiler_options();
 
 mettle::attributes make_attributes(const std::vector<std::string> &attrs);
+
+void validate(boost::any &, const std::vector<std::string> &, raw_option *,
+              int);
 
 } // namespace caliber
 

@@ -49,7 +49,7 @@ tool::tool(std::string filename)
   : path(std::move(filename)), identity(get_identity(tool_name(path))) {}
 
 std::vector<std::string>
-translate_args(const compiler_args &args, const std::string &path) {
+translate_args(const compiler_options &args, const std::string &path) {
   // XXX: This will eventually need to support different compiler front-ends.
   std::vector<std::string> result;
   for(const auto &arg : args){

@@ -49,7 +49,7 @@ namespace {
     mettle::log::test_output output;
 
     per_file_options args;
-    compiler_args comp_args;
+    compiler_options comp_args;
     try {
       namespace opts = boost::program_options;
       auto options = make_per_file_options(args);
@@ -95,7 +95,8 @@ namespace {
 
     using namespace std::chrono;
     auto then = steady_clock::now();
-    auto result = compiler(file, comp_args, args.expect_fail, output);
+    auto result = compiler(file, comp_args, args.raw_args, args.expect_fail,
+                           output);
     auto now = steady_clock::now();
     auto duration = duration_cast<mettle::log::test_duration>(now - then);
 

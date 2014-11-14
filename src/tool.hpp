@@ -22,10 +22,16 @@ inline bool tool_match(const tool &t, const std::string &name) {
     t.identity.end();
 }
 
-using compiler_args = std::vector<boost::program_options::option>;
+struct raw_option {
+  std::string tool;
+  std::string value;
+};
+
+using compiler_options = std::vector<boost::program_options::option>;
+using raw_options = std::vector<raw_option>;
 
 std::vector<std::string>
-translate_args(const compiler_args &args, const std::string &path);
+translate_args(const compiler_options &args, const std::string &path);
 
 } // namespace caliber
 
