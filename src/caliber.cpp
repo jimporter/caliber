@@ -18,8 +18,8 @@
 namespace caliber {
 
 namespace {
-  struct all_options : mettle::generic_options, mettle::output_options,
-                       mettle::child_options {
+  struct all_options : mettle::generic_options, mettle::driver_options,
+                       mettle::output_options {
     METTLE_OPTIONAL_NS::optional<int> child_fd;
     std::vector<std::string> files;
   };
@@ -40,8 +40,8 @@ int main(int argc, const char *argv[]) {
 
   caliber::all_options args;
   auto generic = make_generic_options(args);
+  auto driver = make_driver_options(args);
   auto output = make_output_options(args, factory);
-  auto child = make_child_options(args);
 
   opts::options_description hidden("Hidden options");
   hidden.add_options()
@@ -54,7 +54,7 @@ int main(int argc, const char *argv[]) {
   opts::variables_map vm;
   try {
     opts::options_description all;
-    all.add(generic).add(output).add(child).add(hidden);
+    all.add(generic).add(driver).add(output).add(hidden);
     auto parsed = opts::command_line_parser(argc, argv)
       .options(all).positional(pos).run();
 
@@ -71,7 +71,7 @@ int main(int argc, const char *argv[]) {
     per_file.add(caliber::make_compiler_options());
 
     opts::options_description displayed;
-    displayed.add(generic).add(output).add(child).add(per_file);
+    displayed.add(generic).add(driver).add(output).add(per_file);
     std::cout << displayed << std::endl;
     return 0;
   }
@@ -100,11 +100,6 @@ int main(int argc, const char *argv[]) {
       log::child logger(fds);
       caliber::run_test_files(args.files, logger, compiler, args.filters);
       return 0;
-    }
-
-    if(args.no_fork && args.show_terminal) {
-      caliber::report_error("--show-terminal requires forking tests");
-      return 2;
     }
 
     term::enable(std::cout, args.color);
