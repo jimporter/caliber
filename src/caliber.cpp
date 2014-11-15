@@ -20,6 +20,12 @@ namespace caliber {
 namespace {
   struct all_options : mettle::generic_options, mettle::driver_options,
                        mettle::output_options {
+    all_options() {
+      auto cxx = getenv("CXX");
+      tool = cxx ? cxx : "c++";
+    }
+
+    std::string tool;
     METTLE_OPTIONAL_NS::optional<int> child_fd;
     std::vector<std::string> files;
   };
@@ -42,6 +48,10 @@ int main(int argc, const char *argv[]) {
   auto generic = make_generic_options(args);
   auto driver = make_driver_options(args);
   auto output = make_output_options(args, factory);
+
+  driver.add_options()
+    ("tool", opts::value(&args.tool), "the tool to use for these tests")
+  ;
 
   opts::options_description hidden("Hidden options");
   hidden.add_options()
@@ -82,8 +92,7 @@ int main(int argc, const char *argv[]) {
   }
 
   try {
-    auto cxx = getenv("CXX");
-    caliber::test_compiler compiler(cxx ? cxx : "c++", args.timeout);
+    caliber::test_compiler compiler(args.tool, args.timeout);
 
     if(args.child_fd) {
       if(auto output_opt = has_option(output, vm)) {
