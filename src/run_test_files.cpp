@@ -11,8 +11,6 @@
 namespace caliber {
 
 namespace {
-  const std::vector<std::string> test_suite = {"Compilation tests"};
-
   inline uint64_t generate_id() {
     static std::atomic<uint64_t> id_(0);
     return id_++;
@@ -42,8 +40,9 @@ namespace {
   }
 
   void run_test_file(
-    const std::string &file, mettle::log::test_logger &logger,
-    const test_compiler &compiler, const mettle::filter_set &filter
+    const std::vector<std::string> &test_suite, const std::string &file,
+    mettle::log::test_logger &logger, const test_compiler &compiler,
+    const mettle::filter_set &filter
   ) {
     mettle::test_name name = {test_suite, file, generate_id()};
     mettle::log::test_output output;
@@ -108,14 +107,17 @@ namespace {
 }
 
 void run_test_files(
-  const std::vector<std::string> &files, mettle::log::test_logger &logger,
-  const test_compiler &compiler, const mettle::filter_set &filter
+  const std::string &suite_name, const std::vector<std::string> &files,
+  mettle::log::test_logger &logger, const test_compiler &compiler,
+  const mettle::filter_set &filter
 ) {
+  const std::vector<std::string> test_suite = {suite_name};
+
   logger.started_run();
   logger.started_suite(test_suite);
 
   for(const auto &file : files)
-    run_test_file(file, logger, compiler, filter);
+    run_test_file(test_suite, file, logger, compiler, filter);
 
   logger.ended_suite(test_suite);
   logger.ended_run();

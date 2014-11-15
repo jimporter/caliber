@@ -25,6 +25,7 @@ namespace {
       tool = cxx ? cxx : "c++";
     }
 
+    std::string suite_name = "compilation tests";
     std::string tool;
     METTLE_OPTIONAL_NS::optional<int> child_fd;
     std::vector<std::string> files;
@@ -50,6 +51,8 @@ int main(int argc, const char *argv[]) {
   auto output = make_output_options(args, factory);
 
   driver.add_options()
+    ("suite-name,S", opts::value(&args.suite_name)->value_name("NAME"),
+     "the name of the suite containing these tests")
     ("tool", opts::value(&args.tool)->value_name("TOOL"),
      "the tool to use for these tests")
   ;
@@ -108,7 +111,8 @@ int main(int argc, const char *argv[]) {
         *args.child_fd, io::never_close_handle
       );
       log::child logger(fds);
-      caliber::run_test_files(args.files, logger, compiler, args.filters);
+      caliber::run_test_files(args.suite_name, args.files, logger, compiler,
+                              args.filters);
       return 0;
     }
 
@@ -119,7 +123,8 @@ int main(int argc, const char *argv[]) {
       out, factory.make(args.output, out, args), args.show_time,
       args.show_terminal
     );
-    caliber::run_test_files(args.files, logger, compiler, args.filters);
+    caliber::run_test_files(args.suite_name, args.files, logger, compiler,
+                            args.filters);
 
     logger.summarize();
     return !logger.good();
