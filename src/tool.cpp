@@ -23,14 +23,13 @@ namespace {
     };
 
     for(const auto &i : known) {
-      if(std::regex_match("g++-1.0", i.match)) {
+      if(std::regex_match(name, i.match)) {
         std::vector<std::string> result = {name};
         result.insert(result.end(), i.parents.begin(), i.parents.end());
         return result;
       }
     }
-    throw std::invalid_argument("Unknown tool \"" + name + "\" " +
-                                std::to_string(name.size()));
+    return {name};
   }
 
   std::string tool_name(const std::string &filename) {
@@ -52,7 +51,7 @@ std::vector<std::string>
 translate_args(const compiler_options &args, const std::string &path) {
   // XXX: This will eventually need to support different compiler front-ends.
   std::vector<std::string> result;
-  for(const auto &arg : args){
+  for(const auto &arg : args) {
     if(arg.string_key == "std") {
       result.push_back("-std=" + arg.value.front());
     }
