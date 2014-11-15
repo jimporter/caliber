@@ -50,7 +50,8 @@ int main(int argc, const char *argv[]) {
   auto output = make_output_options(args, factory);
 
   driver.add_options()
-    ("tool", opts::value(&args.tool), "the tool to use for these tests")
+    ("tool", opts::value(&args.tool)->value_name("TOOL"),
+     "the tool to use for these tests")
   ;
 
   opts::options_description hidden("Hidden options");
