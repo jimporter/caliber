@@ -63,10 +63,8 @@ test_compiler::operator ()(
   fflush(nullptr);
 
   std::string dir = parent_path(file);
-  std::vector<std::string> final_args = {
-    compiler_.path.c_str(), "-fsyntax-only", file
-  };
-  for(auto &&tok : translate_args(args, dir))
+  std::vector<std::string> final_args = {compiler_.path.c_str()};
+  for(auto &&tok : translate_args(file, args, dir))
     final_args.push_back(std::move(tok));
   for(const auto &arg : raw_args) {
     if(tool_match(compiler_, arg.tool))

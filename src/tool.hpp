@@ -31,7 +31,8 @@ using compiler_options = std::vector<boost::program_options::option>;
 using raw_options = std::vector<raw_option>;
 
 std::vector<std::string>
-translate_args(const compiler_options &args, const std::string &path);
+translate_args(const std::string &file, const compiler_options &args,
+               const std::string &base_path);
 
 } // namespace caliber
 

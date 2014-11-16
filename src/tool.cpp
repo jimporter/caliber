@@ -48,7 +48,8 @@ tool::tool(std::string filename)
   : path(std::move(filename)), identity(get_identity(tool_name(path))) {}
 
 std::vector<std::string>
-translate_args(const compiler_options &args, const std::string &path) {
+translate_args(const std::string &file, const compiler_options &args,
+               const std::string &base_path) {
   // XXX: This will eventually need to support different compiler front-ends.
   std::vector<std::string> result;
   for(const auto &arg : args) {
@@ -57,13 +58,15 @@ translate_args(const compiler_options &args, const std::string &path) {
     }
     else if(arg.string_key == "-I") {
       result.push_back("-I");
-      result.push_back(path + arg.value.front());
+      result.push_back(base_path + arg.value.front());
     }
     else {
       result.push_back(arg.string_key);
       result.insert(result.end(), arg.value.begin(), arg.value.end());
     }
   }
+
+  result.insert(result.end(), {"-fsyntax-only", file});
   return result;
 }
 
