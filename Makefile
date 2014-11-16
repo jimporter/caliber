@@ -3,6 +3,10 @@ PREFIX := /usr
 
 -include config.mk
 
+ifndef TMPDIR
+  TMPDIR := /tmp
+endif
+
 TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
 COMPILATION_TESTS := $(wildcard test/compilation/*.cpp)
 SOURCES := $(wildcard src/*.cpp)
@@ -19,7 +23,7 @@ all: caliber
 # <http://scottmcpeak.com/autodepend/autodepend.html>.
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -Iinclude -c $< -o $@
-	$(eval TEMP := $(shell mktemp))
+	$(eval TEMP := $(shell mktemp $(TMPDIR)/caliber-XXXXXX))
 	@$(CXX) $(CXXFLAGS) -MM -Iinclude $< > $(TEMP)
 	@sed -e 's|.*:|$*.o:|' < $(TEMP) > $*.d
 	@sed -e 's/.*://' -e 's/\\$$//' < $(TEMP) | fmt -1 | \
