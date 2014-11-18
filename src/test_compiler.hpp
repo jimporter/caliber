@@ -29,7 +29,7 @@ public:
     return compiler_;
   }
 private:
-  static void fork_watcher(std::chrono::milliseconds timeout);
+  static void fork_monitor(std::chrono::milliseconds timeout);
 
   const struct tool compiler_;
   timeout_t timeout_;
