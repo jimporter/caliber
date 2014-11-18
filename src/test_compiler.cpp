@@ -76,15 +76,12 @@ test_compiler::operator ()(
     return parent_failed();
 
   if(pid == 0) {
-    if(timeout_)
-      mettle::fork_monitor(*timeout_);
-
     // Make a new process group so we can kill the test and all its children
     // as a group.
     setpgid(0, 0);
 
     if(timeout_)
-      mettle::notify_monitor();
+      mettle::fork_monitor(*timeout_);
 
     if(stdout_pipe.close_read() < 0 ||
        stderr_pipe.close_read() < 0)
