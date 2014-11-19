@@ -11,16 +11,13 @@
 #include <sstream>
 
 #include <mettle/driver/scoped_pipe.hpp>
+#include <mettle/driver/scoped_sig_intr.hpp>
 #include <mettle/driver/test_monitor.hpp>
 #include <mettle/output.hpp>
 
 #include "paths.hpp"
 
 namespace caliber {
-
-namespace {
-  constexpr int err_timeout = 64;
-}
 
 std::unique_ptr<char *[]>
 make_argv(const std::vector<std::string> &argv) {
@@ -60,8 +57,6 @@ test_compiler::operator ()(
      stderr_pipe.open() < 0)
     return parent_failed();
 
-  fflush(nullptr);
-
   std::string dir = parent_path(file);
   std::vector<std::string> final_args = {compiler_.path.c_str()};
   for(auto &&tok : translate_args(file, args, dir))
@@ -71,11 +66,18 @@ test_compiler::operator ()(
       final_args.push_back(arg.value);
   }
 
+  fflush(nullptr);
+
+  mettle::scoped_sig_intr intr;
+  intr.open(SIGCHLD);
+
   pid_t pid;
   if((pid = fork()) < 0)
     return parent_failed();
 
   if(pid == 0) {
+    intr.close();
+
     // Make a new process group so we can kill the test and all its children
     // as a group.
     setpgid(0, 0);
@@ -99,38 +101,35 @@ test_compiler::operator ()(
        stderr_pipe.close_write() < 0)
       return parent_failed();
 
-    ssize_t size;
-    char buf[BUFSIZ];
+    std::vector<mettle::readfd> dests = {
+      {stdout_pipe.read_fd, &output.stdout},
+      {stderr_pipe.read_fd, &output.stderr}
+    };
 
-    // Read from the piped stdout and stderr.
-    int rv;
-    pollfd fds[2] = { {stdout_pipe.read_fd, POLLIN, 0},
-                      {stderr_pipe.read_fd, POLLIN, 0} };
-    std::string *dests[] = {&output.stdout, &output.stderr};
-    int open_fds = 2;
-    while(open_fds && (rv = poll(fds, 2, -1)) > 0) {
-      for(size_t i = 0; i < 2; i++) {
-        if(fds[i].revents & POLLIN) {
-          if((size = read(fds[i].fd, buf, sizeof(buf))) < 0)
-            return parent_failed();
-          dests[i]->append(buf, size);
-        }
-        if(fds[i].revents & POLLHUP) {
-          fds[i].fd = -fds[i].fd;
-          open_fds--;
-        }
-      }
+    // Read from the piped stdout, stderr, and log. If we're interrupted
+    // (probably by SIGCHLD), do one last non-blocking read to get any data we
+    // might have missed.
+    sigset_t empty;
+    sigemptyset(&empty);
+    if(mettle::read_into(dests, nullptr, &empty) < 0) {
+      if(errno != EINTR)
+        return parent_failed();
+      timespec timeout = {0, 0};
+      if(mettle::read_into(dests, &timeout, nullptr) < 0)
+        return parent_failed();
     }
-    if(rv < 0) // poll() failed!
-      return parent_failed();
 
     int status;
     if(waitpid(pid, &status, 0) < 0)
       return parent_failed();
 
+    // Make sure everything in the test's process group is dead. Don't worry
+    // about reaping.
+    kill(-pid, SIGKILL);
+
     if(WIFEXITED(status)) {
       int exit_code = WEXITSTATUS(status);
-      if(exit_code == err_timeout) {
+      if(exit_code == mettle::err_timeout) {
         std::ostringstream ss;
         ss << "Timed out after " << timeout_->count() << " ms";
         return { false, ss.str() };
