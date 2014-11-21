@@ -1,3 +1,6 @@
+#include <pthread.h>
+#include <unistd.h>
+
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -34,6 +37,11 @@ namespace {
   const char program_name[] = "caliber";
   void report_error(const std::string &message) {
     std::cerr << program_name << ": " << message << std::endl;
+  }
+
+  int child_fd;
+  void atfork_child() {
+    close(child_fd);
   }
 }
 
@@ -106,6 +114,8 @@ int main(int argc, const char *argv[]) {
         return 2;
       }
 
+      caliber::child_fd = *args.child_fd;
+      pthread_atfork(nullptr, nullptr, caliber::atfork_child);
       namespace io = boost::iostreams;
       io::stream<io::file_descriptor_sink> fds(
         *args.child_fd, io::never_close_handle

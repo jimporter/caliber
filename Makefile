@@ -10,6 +10,7 @@ endif
 TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
 COMPILATION_TESTS := $(wildcard test/compilation/*.cpp)
 SOURCES := $(wildcard src/*.cpp)
+LIBS := -lboost_program_options -lboost_iostreams -pthread
 ALL_TESTS := $(TESTS) "./caliber $(COMPILATION_TESTS)"
 
 # Include all the existing dependency files for automatic #include dependency
@@ -38,7 +39,7 @@ $(TESTS): %: %.o
 
 tests: $(TESTS)
 
-caliber: MY_LDFLAGS := $(LDFLAGS) -lboost_program_options -lboost_iostreams
+caliber: MY_LDFLAGS := $(LDFLAGS) $(LIBS)
 caliber: $(SOURCES:.cpp=.o)
 	$(CXX) $(CXXFLAGS) $^ -L. -lmettle $(MY_LDFLAGS) -o $@
 
