@@ -11,7 +11,7 @@
 #include <sstream>
 
 #include <mettle/driver/scoped_pipe.hpp>
-#include <mettle/driver/scoped_sig_intr.hpp>
+#include <mettle/driver/scoped_signal.hpp>
 #include <mettle/driver/test_monitor.hpp>
 #include <mettle/output.hpp>
 
@@ -19,31 +19,48 @@
 
 namespace caliber {
 
-std::unique_ptr<char *[]>
-make_argv(const std::vector<std::string> &argv) {
-  auto real_argv = std::make_unique<char *[]>(argv.size() + 1);
-  for(size_t i = 0; i != argv.size(); i++)
-    real_argv[i] = const_cast<char*>(argv[i].c_str());
-  return real_argv;
-}
+namespace {
+  pid_t test_pgid = 0;
+  struct sigaction old_sigint, old_sigquit;
 
-inline std::string err_string(int errnum) {
-  char buf[256];
+  void sig_handler(int signum) {
+    assert(test_pgid != 0);
+    kill(-test_pgid, signum);
+
+    // Restore the previous signal action and re-raise the signal.
+    struct sigaction *old_act = signum == SIGINT ? &old_sigint : &old_sigquit;
+    sigaction(signum, old_act, nullptr);
+    raise(signum);
+  }
+
+  void sig_chld(int) {}
+
+  inline std::string err_string(int errnum) {
+    char buf[256];
 #ifdef _GNU_SOURCE
-  return strerror_r(errnum, buf, sizeof(buf));
+    return strerror_r(errnum, buf, sizeof(buf));
 #else
-  if(strerror_r(errnum, buf, sizeof(buf)) < 0)
-    return "";
-  return buf;
+    if(strerror_r(errnum, buf, sizeof(buf)) < 0)
+      return "";
+    return buf;
 #endif
-}
+  }
 
-inline mettle::test_result parent_failed() {
-  return { false, err_string(errno) };
-}
+  inline mettle::test_result parent_failed() {
+    return { false, err_string(errno) };
+  }
 
-[[noreturn]] inline void child_failed() {
-  _exit(128);
+  [[noreturn]] inline void child_failed() {
+    _exit(128);
+  }
+
+  std::unique_ptr<char *[]>
+  make_argv(const std::vector<std::string> &argv) {
+    auto real_argv = std::make_unique<char *[]>(argv.size() + 1);
+    for(size_t i = 0; i != argv.size(); i++)
+      real_argv[i] = const_cast<char*>(argv[i].c_str());
+    return real_argv;
+  }
 }
 
 mettle::test_result
@@ -68,15 +85,18 @@ test_compiler::operator ()(
 
   fflush(nullptr);
 
-  mettle::scoped_sig_intr intr;
-  intr.open(SIGCHLD);
+  mettle::scoped_sigprocmask mask;
+  if(mask.push(SIG_BLOCK, SIGCHLD) < 0 ||
+     mask.push(SIG_BLOCK, {SIGINT, SIGQUIT}) < 0)
+    return parent_failed();
 
   pid_t pid;
   if((pid = fork()) < 0)
     return parent_failed();
 
   if(pid == 0) {
-    intr.close();
+    if(mask.clear() < 0)
+      child_failed();
 
     // Make a new process group so we can kill the test and all its children
     // as a group.
@@ -97,6 +117,21 @@ test_compiler::operator ()(
     child_failed();
   }
   else {
+    mettle::scoped_signal sigint, sigquit, sigchld;
+    test_pgid = pid;
+
+    if(sigaction(SIGINT, nullptr, &old_sigint) < 0 ||
+       sigaction(SIGQUIT, nullptr, &old_sigquit) < 0)
+      return parent_failed();
+
+    if(sigint.open(SIGINT, sig_handler) < 0 ||
+       sigquit.open(SIGQUIT, sig_handler) < 0 ||
+       sigchld.open(SIGCHLD, sig_chld) < 0)
+      return parent_failed();
+
+    if(mask.pop() < 0)
+      return parent_failed();
+
     if(stdout_pipe.close_write() < 0 ||
        stderr_pipe.close_write() < 0)
       return parent_failed();
@@ -126,6 +161,7 @@ test_compiler::operator ()(
     // Make sure everything in the test's process group is dead. Don't worry
     // about reaping.
     kill(-pid, SIGKILL);
+    test_pgid = 0;
 
     if(WIFEXITED(status)) {
       int exit_code = WEXITSTATUS(status);
