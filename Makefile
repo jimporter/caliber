@@ -13,12 +13,12 @@ SOURCES := $(wildcard src/*.cpp)
 LIBS := -lboost_program_options -lboost_iostreams -pthread
 ALL_TESTS := $(TESTS) "./caliber $(COMPILATION_TESTS)"
 
+all: caliber
+
 # Include all the existing dependency files for automatic #include dependency
 # handling.
 -include $(TESTS:=.d)
 -include $(SOURCES:.cpp=.d)
-
-all: caliber
 
 # Build .o files and the corresponding .d (dependency) files. For more info, see
 # <http://scottmcpeak.com/autodepend/autodepend.html>.
