@@ -137,8 +137,8 @@ test_compiler::operator ()(
       return parent_failed();
 
     std::vector<mettle::readfd> dests = {
-      {stdout_pipe.read_fd, &output.stdout},
-      {stderr_pipe.read_fd, &output.stderr}
+      {stdout_pipe.read_fd, &output.stdout_log},
+      {stderr_pipe.read_fd, &output.stderr_log}
     };
 
     // Read from the piped stdout, stderr, and log. If we're interrupted
