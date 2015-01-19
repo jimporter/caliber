@@ -10,9 +10,9 @@
 #include <regex>
 #include <sstream>
 
-#include <mettle/driver/scoped_pipe.hpp>
-#include <mettle/driver/scoped_signal.hpp>
-#include <mettle/driver/test_monitor.hpp>
+#include <mettle/driver/posix/scoped_pipe.hpp>
+#include <mettle/driver/posix/scoped_signal.hpp>
+#include <mettle/driver/posix/test_monitor.hpp>
 #include <mettle/output.hpp>
 
 #include "paths.hpp"

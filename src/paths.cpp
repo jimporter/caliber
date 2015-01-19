@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <system_error>
 
-#include <mettle/driver/scoped_pipe.hpp>
+#include <mettle/driver/posix/scoped_pipe.hpp>
 
 namespace caliber {
 
