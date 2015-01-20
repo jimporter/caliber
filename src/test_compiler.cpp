@@ -25,7 +25,7 @@ namespace {
 
   void sig_handler(int signum) {
     assert(test_pgid != 0);
-    kill(-test_pgid, signum);
+    killpg(test_pgid, signum);
 
     // Restore the previous signal action and re-raise the signal.
     struct sigaction *old_act = signum == SIGINT ? &old_sigint : &old_sigquit;
@@ -47,6 +47,9 @@ namespace {
   }
 
   inline mettle::test_result parent_failed() {
+    if(test_pgid)
+      killpg(test_pgid, SIGKILL);
+    test_pgid = 0;
     return { false, err_string(errno) };
   }
 
@@ -69,6 +72,8 @@ test_compiler::operator ()(
   const raw_options &raw_args, bool expect_fail,
   mettle::log::test_output &output
 ) const {
+  assert(test_pgid == 0);
+
   mettle::scoped_pipe stdout_pipe, stderr_pipe;
   if(stdout_pipe.open() < 0 ||
      stderr_pipe.open() < 0)
@@ -160,7 +165,7 @@ test_compiler::operator ()(
 
     // Make sure everything in the test's process group is dead. Don't worry
     // about reaping.
-    kill(-pid, SIGKILL);
+    killpg(test_pgid, SIGKILL);
     test_pgid = 0;
 
     if(WIFEXITED(status)) {
@@ -180,12 +185,8 @@ test_compiler::operator ()(
         return { false, "Compilation successful" };
       }
     }
-    else if(WIFSIGNALED(status)) {
+    else { // WIFSIGNALED
       return { false, strsignal(WTERMSIG(status)) };
-    }
-    else { // WIFSTOPPED
-      kill(pid, SIGKILL);
-      return { false, strsignal(WSTOPSIG(status)) };
     }
   }
 }
