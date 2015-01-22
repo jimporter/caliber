@@ -1,6 +1,3 @@
-#include <pthread.h>
-#include <unistd.h>
-
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -13,6 +10,7 @@
 #include <mettle/driver/log/child.hpp>
 #include <mettle/driver/log/summary.hpp>
 #include <mettle/driver/log/term.hpp>
+#include <mettle/driver/posix/subprocess.hpp>
 
 #include "cmd_line.hpp"
 #include "run_test_files.hpp"
@@ -38,17 +36,13 @@ namespace {
   void report_error(const std::string &message) {
     std::cerr << program_name << ": " << message << std::endl;
   }
-
-  int child_fd;
-  void atfork_child() {
-    close(child_fd);
-  }
 }
 
 } // namespace caliber
 
 int main(int argc, const char *argv[]) {
   using namespace mettle;
+  using namespace mettle::posix;
   namespace opts = boost::program_options;
 
   auto factory = make_logger_factory();
@@ -114,8 +108,7 @@ int main(int argc, const char *argv[]) {
         return 2;
       }
 
-      caliber::child_fd = *args.child_fd;
-      pthread_atfork(nullptr, nullptr, caliber::atfork_child);
+      close_fd_on_fork(*args.child_fd);
       namespace io = boost::iostreams;
       io::stream<io::file_descriptor_sink> fds(
         *args.child_fd, io::never_close_handle

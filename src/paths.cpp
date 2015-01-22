@@ -13,7 +13,7 @@
 namespace caliber {
 
 std::string which(const std::string &command) {
-  mettle::scoped_pipe stdout_pipe;
+  mettle::posix::scoped_pipe stdout_pipe;
   if(stdout_pipe.open() < 0)
     throw std::system_error(errno, std::system_category());
 

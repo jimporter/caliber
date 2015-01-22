@@ -12,7 +12,7 @@
 
 #include <mettle/driver/posix/scoped_pipe.hpp>
 #include <mettle/driver/posix/scoped_signal.hpp>
-#include <mettle/driver/posix/test_monitor.hpp>
+#include <mettle/driver/posix/subprocess.hpp>
 #include <mettle/output.hpp>
 
 #include "paths.hpp"
@@ -74,7 +74,7 @@ test_compiler::operator ()(
 ) const {
   assert(test_pgid == 0);
 
-  mettle::scoped_pipe stdout_pipe, stderr_pipe;
+  mettle::posix::scoped_pipe stdout_pipe, stderr_pipe;
   if(stdout_pipe.open() < 0 ||
      stderr_pipe.open() < 0)
     return parent_failed();
@@ -90,7 +90,7 @@ test_compiler::operator ()(
 
   fflush(nullptr);
 
-  mettle::scoped_sigprocmask mask;
+  mettle::posix::scoped_sigprocmask mask;
   if(mask.push(SIG_BLOCK, SIGCHLD) < 0 ||
      mask.push(SIG_BLOCK, {SIGINT, SIGQUIT}) < 0)
     return parent_failed();
@@ -108,7 +108,7 @@ test_compiler::operator ()(
     setpgid(0, 0);
 
     if(timeout_)
-      mettle::fork_monitor(*timeout_);
+      mettle::posix::make_timeout_monitor(*timeout_);
 
     if(stdout_pipe.close_read() < 0 ||
        stderr_pipe.close_read() < 0)
@@ -122,7 +122,7 @@ test_compiler::operator ()(
     child_failed();
   }
   else {
-    mettle::scoped_signal sigint, sigquit, sigchld;
+    mettle::posix::scoped_signal sigint, sigquit, sigchld;
     test_pgid = pid;
 
     if(sigaction(SIGINT, nullptr, &old_sigint) < 0 ||
@@ -141,7 +141,7 @@ test_compiler::operator ()(
        stderr_pipe.close_write() < 0)
       return parent_failed();
 
-    std::vector<mettle::readfd> dests = {
+    std::vector<mettle::posix::readfd> dests = {
       {stdout_pipe.read_fd, &output.stdout_log},
       {stderr_pipe.read_fd, &output.stderr_log}
     };
@@ -151,11 +151,11 @@ test_compiler::operator ()(
     // might have missed.
     sigset_t empty;
     sigemptyset(&empty);
-    if(mettle::read_into(dests, nullptr, &empty) < 0) {
+    if(mettle::posix::read_into(dests, nullptr, &empty) < 0) {
       if(errno != EINTR)
         return parent_failed();
       timespec timeout = {0, 0};
-      if(mettle::read_into(dests, &timeout, nullptr) < 0)
+      if(mettle::posix::read_into(dests, &timeout, nullptr) < 0)
         return parent_failed();
     }
 
@@ -170,7 +170,7 @@ test_compiler::operator ()(
 
     if(WIFEXITED(status)) {
       int exit_code = WEXITSTATUS(status);
-      if(exit_code == mettle::err_timeout) {
+      if(exit_code == mettle::posix::err_timeout) {
         std::ostringstream ss;
         ss << "Timed out after " << timeout_->count() << " ms";
         return { false, ss.str() };
