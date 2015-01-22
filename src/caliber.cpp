@@ -28,7 +28,7 @@ namespace {
 
     std::string suite_name = "compilation tests";
     std::string tool;
-    METTLE_OPTIONAL_NS::optional<int> child_fd;
+    METTLE_OPTIONAL_NS::optional<int> output_fd;
     std::vector<std::string> files;
   };
 
@@ -61,7 +61,8 @@ int main(int argc, const char *argv[]) {
 
   opts::options_description hidden("Hidden options");
   hidden.add_options()
-    ("child", opts::value(&args.child_fd), "run this file as a child process")
+    ("output-fd", opts::value(&args.output_fd),
+     "pipe the results to this file descriptor")
     ("file", opts::value(&args.files), "input file")
   ;
   opts::positional_options_description pos;
@@ -100,18 +101,18 @@ int main(int argc, const char *argv[]) {
   try {
     caliber::test_compiler compiler(args.tool, args.timeout);
 
-    if(args.child_fd) {
+    if(args.output_fd) {
       if(auto output_opt = has_option(output, vm)) {
         using namespace opts::command_line_style;
         caliber::report_error(output_opt->canonical_display_name(allow_long) +
-                              " can't be used with --child");
+                              " can't be used with --output-fd");
         return 2;
       }
 
-      close_fd_on_fork(*args.child_fd);
+      close_fd_on_fork(*args.output_fd);
       namespace io = boost::iostreams;
       io::stream<io::file_descriptor_sink> fds(
-        *args.child_fd, io::never_close_handle
+        *args.output_fd, io::never_close_handle
       );
       log::child logger(fds);
       caliber::run_test_files(args.suite_name, args.files, logger, compiler,
