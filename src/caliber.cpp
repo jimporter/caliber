@@ -109,7 +109,7 @@ int main(int argc, const char *argv[]) {
         return 2;
       }
 
-      close_fd_on_fork(*args.output_fd);
+      make_fd_private(*args.output_fd);
       namespace io = boost::iostreams;
       io::stream<io::file_descriptor_sink> fds(
         *args.output_fd, io::never_close_handle
