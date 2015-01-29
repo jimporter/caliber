@@ -120,7 +120,7 @@ int main(int argc, const char *argv[]) {
       return 0;
     }
 
-    term::enable(std::cout, args.color);
+    term::enable(std::cout, color_enabled(args.color));
     indenting_ostream out(std::cout);
 
     log::summary logger(
