@@ -72,11 +72,13 @@ test_compiler::operator ()(
   const raw_options &raw_args, bool expect_fail,
   mettle::log::test_output &output
 ) const {
+  using namespace mettle::posix;
   assert(test_pgid == 0);
 
-  mettle::posix::scoped_pipe stdout_pipe, stderr_pipe;
+  scoped_pipe stdout_pipe, stderr_pipe, pgid_pipe;
   if(stdout_pipe.open() < 0 ||
-     stderr_pipe.open() < 0)
+     stderr_pipe.open() < 0 ||
+     pgid_pipe.open(O_CLOEXEC) < 0)
     return parent_failed();
 
   std::string dir = parent_path(file);
@@ -90,7 +92,7 @@ test_compiler::operator ()(
 
   fflush(nullptr);
 
-  mettle::posix::scoped_sigprocmask mask;
+  scoped_sigprocmask mask;
   if(mask.push(SIG_BLOCK, SIGCHLD) < 0 ||
      mask.push(SIG_BLOCK, {SIGINT, SIGQUIT}) < 0)
     return parent_failed();
@@ -103,27 +105,39 @@ test_compiler::operator ()(
     if(mask.clear() < 0)
       child_failed();
 
-    // Make a new process group so we can kill the test and all its children
-    // as a group.
-    setpgid(0, 0);
-
-    if(timeout_)
-      mettle::posix::make_timeout_monitor(*timeout_);
-
     if(stdout_pipe.close_read() < 0 ||
-       stderr_pipe.close_read() < 0)
+       stderr_pipe.close_read() < 0 ||
+       pgid_pipe.close_read() < 0)
       child_failed();
 
     if(stdout_pipe.move_write(STDOUT_FILENO) < 0 ||
        stderr_pipe.move_write(STDERR_FILENO) < 0)
       child_failed();
 
+    if(timeout_)
+      make_timeout_monitor(*timeout_);
+
+    // Make a new process group so we can kill the test and all its children
+    // as a group.
+    if(setpgid(0, 0) < 0)
+      child_failed();
+
+    if(send_pgid(pgid_pipe.write_fd, getpgid(0)) < 0)
+      child_failed();
+
     execvp(compiler_.path.c_str(), make_argv(final_args).get());
     child_failed();
   }
   else {
-    mettle::posix::scoped_signal sigint, sigquit, sigchld;
-    test_pgid = pid;
+    scoped_signal sigint, sigquit, sigchld;
+
+    if(stdout_pipe.close_write() < 0 ||
+       stderr_pipe.close_write() < 0 ||
+       pgid_pipe.close_write() < 0)
+      return parent_failed();
+
+    if(recv_pgid(pgid_pipe.read_fd, &test_pgid) < 0)
+      return parent_failed();
 
     if(sigaction(SIGINT, nullptr, &old_sigint) < 0 ||
        sigaction(SIGQUIT, nullptr, &old_sigquit) < 0)
@@ -137,11 +151,7 @@ test_compiler::operator ()(
     if(mask.pop() < 0)
       return parent_failed();
 
-    if(stdout_pipe.close_write() < 0 ||
-       stderr_pipe.close_write() < 0)
-      return parent_failed();
-
-    std::vector<mettle::posix::readfd> dests = {
+    std::vector<readfd> dests = {
       {stdout_pipe.read_fd, &output.stdout_log},
       {stderr_pipe.read_fd, &output.stderr_log}
     };
@@ -151,11 +161,11 @@ test_compiler::operator ()(
     // might have missed.
     sigset_t empty;
     sigemptyset(&empty);
-    if(mettle::posix::read_into(dests, nullptr, &empty) < 0) {
+    if(read_into(dests, nullptr, &empty) < 0) {
       if(errno != EINTR)
         return parent_failed();
       timespec timeout = {0, 0};
-      if(mettle::posix::read_into(dests, &timeout, nullptr) < 0)
+      if(read_into(dests, &timeout, nullptr) < 0)
         return parent_failed();
     }
 
@@ -170,7 +180,7 @@ test_compiler::operator ()(
 
     if(WIFEXITED(status)) {
       int exit_code = WEXITSTATUS(status);
-      if(exit_code == mettle::posix::err_timeout) {
+      if(exit_code == err_timeout) {
         std::ostringstream ss;
         ss << "Timed out after " << timeout_->count() << " ms";
         return { false, ss.str() };
