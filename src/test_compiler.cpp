@@ -129,7 +129,7 @@ test_compiler::operator ()(
     child_failed();
   }
   else {
-    scoped_signal sigint, sigquit, sigchld;
+    scoped_sigaction sigint, sigquit, sigchld;
 
     if(stdout_pipe.close_write() < 0 ||
        stderr_pipe.close_write() < 0 ||
