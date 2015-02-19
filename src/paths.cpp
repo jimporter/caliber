@@ -8,9 +8,16 @@
 #include <stdexcept>
 #include <system_error>
 
+#include <mettle/driver/exit_code.hpp>
 #include <mettle/driver/posix/scoped_pipe.hpp>
 
 namespace caliber {
+
+namespace {
+  [[noreturn]] inline void child_failed() {
+    _exit(mettle::exit_code::fatal);
+  }
+}
 
 std::string which(const std::string &command) {
   mettle::posix::scoped_pipe stdout_pipe;
@@ -22,16 +29,16 @@ std::string which(const std::string &command) {
     throw std::system_error(errno, std::system_category());
   if(pid == 0) {
     if(stdout_pipe.close_read() < 0)
-      _exit(128);
+      child_failed();
 
     if(dup2(stdout_pipe.write_fd, STDOUT_FILENO) < 0)
-      _exit(128);
+      child_failed();
 
     if(stdout_pipe.close_write() < 0)
-      _exit(128);
+      child_failed();
 
     execlp("which", "which", "--", command.c_str(), nullptr);
-    _exit(128);
+    child_failed();
   }
   else {
     if(stdout_pipe.close_write() < 0)

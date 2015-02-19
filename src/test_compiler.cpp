@@ -10,6 +10,7 @@
 #include <regex>
 #include <sstream>
 
+#include <mettle/driver/exit_code.hpp>
 #include <mettle/driver/posix/scoped_pipe.hpp>
 #include <mettle/driver/posix/scoped_signal.hpp>
 #include <mettle/driver/posix/subprocess.hpp>
@@ -54,7 +55,7 @@ namespace {
   }
 
   [[noreturn]] inline void child_failed() {
-    _exit(128);
+    _exit(mettle::exit_code::fatal);
   }
 
   std::unique_ptr<char *[]>
@@ -179,20 +180,21 @@ test_compiler::operator ()(
     test_pgid = 0;
 
     if(WIFEXITED(status)) {
-      int exit_code = WEXITSTATUS(status);
-      if(exit_code == err_timeout) {
+      int exit_status = WEXITSTATUS(status);
+      bool success = exit_status == mettle::exit_code::success;
+      if(exit_status == mettle::exit_code::timeout) {
         std::ostringstream ss;
         ss << "Timed out after " << timeout_->count() << " ms";
         return { false, ss.str() };
       }
-      else if(bool(exit_code) == expect_fail) {
+      else if(expect_fail == !success) {
         return { true, "" };
       }
-      else if(exit_code) {
-        return { false, "Compilation failed" };
+      else if(success) {
+        return { false, "Compilation successful" };
       }
       else {
-        return { false, "Compilation successful" };
+        return { false, "Compilation failed" };
       }
     }
     else { // WIFSIGNALED
