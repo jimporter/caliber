@@ -1,0 +1,50 @@
+# -*- python -*-
+
+from os.path import splitext
+
+if env.compiler('c++').flavor == 'msvc':
+    global_options(['/EHsc'], lang='c++')
+else:
+    global_options(['-std=c++1y', '-pthread'], lang='c++')
+    global_link_options(['-pthread'])
+
+includes = header_directory('include')
+
+boost = boost_package(['program_options', 'iostreams'], version='>=1.23')
+libmettle = system_package('mettle')
+
+caliber_objs = object_files(
+    files=find_files('src', '*.cpp'),
+    include=includes,
+    packages=[libmettle, boost]
+)
+caliber = executable(
+    'caliber',
+    files=caliber_objs,
+    packages=[libmettle, boost]
+)
+
+install(caliber)
+
+extra_files = {
+    'test/test_paths.cpp': ['src/paths.cpp'],
+    'test/test_tool.cpp': ['src/paths.cpp', 'src/tool.cpp'],
+}
+
+mettle = test_driver(
+    'mettle',
+    options=['--output=verbose'],
+    environment={'TEST_DATA': directory('test/test-data')},
+)
+driver = test_driver(caliber, parent=mettle)
+
+for src in find_files('test', '*.cpp', flat=True):
+    test(executable(
+        splitext(src)[0],
+        files=[src] + [caliber_objs[i] for i in extra_files.get(src, [])],
+        include=includes,
+        packages=[boost, libmettle],
+    ), driver=mettle)
+
+for src in find_files('test/compilation', '*.cpp'):
+    test(source_file(src), driver=driver)
