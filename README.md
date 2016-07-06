@@ -6,4 +6,4 @@ test code compilation.
 
 ## License
 
-This library is licensed under the BSD 3-Clause license.
+This library is licensed under the BSD 3-Clause [license](LICENSE).
