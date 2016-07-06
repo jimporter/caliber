@@ -2,20 +2,20 @@
 
 from os.path import splitext
 
-if env.compiler('c++').flavor == 'msvc':
+bfg9000_required_version('>=0.2.0')
+project('caliber', version='0.1pre')
+
+if env.builder('c++').flavor == 'msvc':
     global_options(['/EHsc'], lang='c++')
 else:
     global_options(['-std=c++1y', '-pthread'], lang='c++')
     global_link_options(['-pthread'])
-
-includes = header_directory('include')
 
 boost = boost_package(['program_options', 'iostreams'], version='>=1.23')
 libmettle = system_package('mettle')
 
 caliber_objs = object_files(
     files=find_files('src', '*.cpp'),
-    include=includes,
     packages=[libmettle, boost]
 )
 caliber = executable(
@@ -42,7 +42,6 @@ for src in find_files('test', '*.cpp', flat=True):
     test(executable(
         splitext(src)[0],
         files=[src] + [caliber_objs[i] for i in extra_files.get(src, [])],
-        include=includes,
         packages=[boost, libmettle],
     ), driver=mettle)
 
