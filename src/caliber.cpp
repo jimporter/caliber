@@ -62,10 +62,10 @@ int main(int argc, const char *argv[]) {
   hidden.add_options()
     ("output-fd", opts::value(&args.output_fd),
      "pipe the results to this file descriptor")
-    ("file", opts::value(&args.files), "input file")
+    ("input-file", opts::value(&args.files), "input file")
   ;
   opts::positional_options_description pos;
-  pos.add("file", -1);
+  pos.add("input-file", -1);
 
   opts::variables_map vm;
   try {
