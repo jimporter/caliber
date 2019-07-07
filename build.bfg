@@ -2,17 +2,17 @@
 
 from os.path import splitext
 
-bfg9000_required_version('>=0.2.0')
+bfg9000_required_version('>=0.4.0')
 project('caliber', version='0.1pre')
 
-if env.builder('c++').flavor == 'msvc':
-    global_options(['/EHsc'], lang='c++')
-else:
-    global_options(['-std=c++1y', '-pthread'], lang='c++')
-    global_link_options(['-pthread'])
+global_options([opts.std(argv.std)], lang='c++')
 
 boost = boost_package(['program_options', 'iostreams'], version='>=1.23')
-libmettle = system_package('mettle')
+libmettle = package('mettle', headers=['mettle.hpp'])
+mettle = test_driver(
+    ['mettle', '--output=verbose'],
+    environment={'TEST_DATA': directory('test/test-data')},
+)
 
 caliber_objs = object_files(
     files=find_files('src', '*.cpp'),
@@ -31,11 +31,6 @@ extra_files = {
     'test/test_tool.cpp': ['src/paths.cpp', 'src/tool.cpp'],
 }
 
-mettle = test_driver(
-    'mettle',
-    options=['--output=verbose'],
-    environment={'TEST_DATA': directory('test/test-data')},
-)
 driver = test_driver(caliber, parent=mettle)
 
 for src in find_files('test', '*.cpp', flat=True):
@@ -47,3 +42,5 @@ for src in find_files('test', '*.cpp', flat=True):
 
 for src in find_files('test/compilation', '*.cpp'):
     test(source_file(src), driver=driver)
+
+extra_dist(files=['README.md', 'LICENSE'])
