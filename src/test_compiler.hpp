@@ -15,7 +15,7 @@ class test_compiler {
 public:
   using timeout_t = CALIBER_OPTIONAL_NS::optional<std::chrono::milliseconds>;
 
-  test_compiler(tool compiler, timeout_t timeout = {})
+  test_compiler(caliber::tool compiler, timeout_t timeout = {})
     : compiler_(std::move(compiler)), timeout_(timeout) {}
   test_compiler(const test_compiler &) = delete;
   test_compiler & operator =(const test_compiler &) = delete;
@@ -25,11 +25,11 @@ public:
               const raw_options &raw_args, bool expect_fail,
               mettle::log::test_output &output) const;
 
-  const tool & tool() const {
+  const caliber::tool & tool() const {
     return compiler_;
   }
 private:
-  const struct tool compiler_;
+  const struct caliber::tool compiler_;
   timeout_t timeout_;
 };
 
