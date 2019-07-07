@@ -16,10 +16,10 @@ namespace {
 
   std::vector<std::string> get_identity(const std::string &name)  {
     static std::vector<tool_def> known = {
-      { std::regex(R"/(clang\+\+-\d\.\d)/"), {"clang++", "c++"} },
-      { std::regex(R"/(clang-\d\.\d)/"),     {"clang",   "cc" } },
-      { std::regex(R"/(g\+\+-\d\.\d)/"),     {"g++",     "c++"} },
-      { std::regex(R"/(gcc-\d\.\d)/"),       {"gcc",     "cc" } }
+      { std::regex(R"/(.*clang\+\+(-\d(\.\d)?)?)/"), {"clang++", "c++"} },
+      { std::regex(R"/(.*clang(-\d(\.\d)?)?)/"),     {"clang",   "cc" } },
+      { std::regex(R"/(.*g\+\+(-\d(\.\d)?)?)/"),     {"g++",     "c++"} },
+      { std::regex(R"/(.*gcc(-\d(\.\d)?)?)/"),       {"gcc",     "cc" } }
     };
 
     for(const auto &i : known) {
