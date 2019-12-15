@@ -28,7 +28,7 @@ namespace {
 
     std::string suite_name = "compilation tests";
     std::string tool;
-    METTLE_OPTIONAL_NS::optional<int> output_fd;
+    std::optional<int> output_fd;
     std::vector<std::string> files;
   };
 
@@ -98,7 +98,7 @@ int main(int argc, const char *argv[]) {
   }
 
   try {
-    caliber::test_compiler compiler(args.tool, args.timeout);
+    caliber::test_compiler compiler(args.tool, *args.timeout);
 
     if(args.output_fd) {
       if(auto output_opt = has_option(output, vm)) {

@@ -72,7 +72,7 @@ namespace {
     }
 
     if(!args.name.empty())
-      name.test = std::move(args.name);
+      name.name = std::move(args.name);
 
     auto attrs = make_attributes(args.attrs);
     auto action = filter(name, attrs);
