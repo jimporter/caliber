@@ -2,18 +2,18 @@
 #define INC_CALIBER_SRC_TEST_COMPILER_HPP
 
 #include <chrono>
+#include <optional>
 
 #include <mettle/driver/log/core.hpp>
 #include <mettle/suite/compiled_suite.hpp>
 
-#include "detail/optional.hpp"
 #include "tool.hpp"
 
 namespace caliber {
 
 class test_compiler {
 public:
-  using timeout_t = CALIBER_OPTIONAL_NS::optional<std::chrono::milliseconds>;
+  using timeout_t = std::optional<std::chrono::milliseconds>;
 
   test_compiler(caliber::tool compiler, timeout_t timeout = {})
     : compiler_(std::move(compiler)), timeout_(timeout) {}

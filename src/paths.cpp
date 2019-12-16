@@ -66,17 +66,17 @@ std::string which(const std::string &command) {
   }
 }
 
-std::string parent_path(const CALIBER_STRING_VIEW &filename) {
+std::string parent_path(const std::string_view &filename) {
   size_t slash = filename.rfind('/');
-  if(slash != CALIBER_STRING_VIEW::npos)
+  if(slash != std::string_view::npos)
     return std::string(filename.substr(0, slash + 1));
   else
     return "";
 }
 
-std::string leafname(const CALIBER_STRING_VIEW &filename) {
+std::string leafname(const std::string_view &filename) {
   size_t slash = filename.rfind('/');
-  if(slash != CALIBER_STRING_VIEW::npos)
+  if(slash != std::string_view::npos)
     return std::string(filename.substr(slash + 1));
   else
     return std::string(filename);
