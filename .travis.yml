@@ -15,7 +15,7 @@ addons:
       - libboost-dev
       - libboost-iostreams-dev
       - libboost-program-options-dev
-      - libstdc++-7-dev
+      - libstdc++-9-dev
       - ninja-build
       - python-virtualenv
 
@@ -76,23 +76,7 @@ matrix:
 
     # GCC builds
 
-    - compiler: gcc
-      env: COMPILER=g++-7 EXTRAFLAGS=-Wsuggest-override
-      addons:
-        apt:
-          sources: *sources
-          packages:
-            - *packages
-            - g++-7
-
-    - compiler: gcc
-      env: COMPILER=g++-8 EXTRAFLAGS=-Wsuggest-override
-      addons:
-        apt:
-          sources: *sources
-          packages:
-            - *packages
-            - g++-8
+    # This could work in gcc-8 if we explicitly linked to -lstdc++fs...
 
     - compiler: gcc
       env: COMPILER=g++-9 EXTRAFLAGS=-Wsuggest-override
@@ -102,12 +86,6 @@ matrix:
           packages:
             - *packages
             - g++-9
-
-    # macOS builds
-
-    - os: osx
-      osx_image: xcode10.3
-      env: PYTHON=python2 PIP=pip2 COMPILER=clang++
 
     # C++20 builds
 

@@ -16,8 +16,6 @@
 #include <mettle/driver/posix/subprocess.hpp>
 #include <mettle/output.hpp>
 
-#include "paths.hpp"
-
 namespace caliber {
 
 namespace {
@@ -82,9 +80,8 @@ test_compiler::operator ()(
      pgid_pipe.open(O_CLOEXEC) < 0)
     return parent_failed();
 
-  std::string dir = parent_path(file);
   std::vector<std::string> final_args = {compiler_.path.c_str()};
-  for(auto &&tok : translate_args(file, args, dir))
+  for(auto &&tok : translate_args(file, args))
     final_args.push_back(std::move(tok));
   for(const auto &arg : raw_args) {
     if(tool_match(compiler_, arg.tool))

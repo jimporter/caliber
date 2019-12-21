@@ -1,4 +1,4 @@
-// caliber -F --name "raw arguments" -X c++=-Wall -X c++=-Werror
+// caliber -F --name "raw arguments" -X cc=-Wall -X cc=-Werror
 int main() {
   int i;
   if(i = 0) {}
