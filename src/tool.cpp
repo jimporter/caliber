@@ -55,12 +55,10 @@ translate_args(const std::string &file, const compiler_options &args,
   for(const auto &arg : args) {
     if(arg.string_key == "std") {
       result.push_back("-std=" + arg.value.front());
-    }
-    else if(arg.string_key == "-I") {
+    } else if(arg.string_key == "-I") {
       result.push_back("-I");
       result.push_back(base_path + arg.value.front());
-    }
-    else {
+    } else {
       result.push_back(arg.string_key);
       result.insert(result.end(), arg.value.begin(), arg.value.end());
     }

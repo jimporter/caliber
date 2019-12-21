@@ -42,8 +42,7 @@ extract_comment(std::istream &is, const std::string &name) {
     if(c == '/') {
       if(matches_name(is, name))
         return boost::program_options::split_unix(readline(is));
-    }
-    else if(c == '*') {
+    } else if(c == '*') {
       if(matches_name(is, name, " \t\n\r")) {
         std::string comment;
         while(true) {

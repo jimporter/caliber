@@ -128,8 +128,7 @@ test_compiler::operator ()(
 
     execvp(compiler_.path.c_str(), make_argv(final_args).get());
     child_failed();
-  }
-  else {
+  } else {
     scoped_sigaction sigint, sigquit, sigchld;
 
     if(stdout_pipe.close_write() < 0 ||
@@ -181,23 +180,19 @@ test_compiler::operator ()(
 
     if(WIFEXITED(status)) {
       int exit_status = WEXITSTATUS(status);
-      bool success = exit_status == mettle::exit_code::success;
       if(exit_status == mettle::exit_code::timeout) {
         std::ostringstream ss;
         ss << "Timed out after " << timeout_->count() << " ms";
         return { false, ss.str() };
+      } else {
+        std::ostringstream ss;
+        for(const auto &i : final_args)
+          ss << i << " ";
+        bool success = exit_status == mettle::exit_code::success;
+        ss << (success ? "\nCompilation successful" : "\nCompilation failed");
+        return {expect_fail != success, ss.str()};
       }
-      else if(expect_fail == !success) {
-        return { true, "" };
-      }
-      else if(success) {
-        return { false, "Compilation successful" };
-      }
-      else {
-        return { false, "Compilation failed" };
-      }
-    }
-    else { // WIFSIGNALED
+    } else { // WIFSIGNALED
       return { false, strsignal(WTERMSIG(status)) };
     }
   }

@@ -39,8 +39,7 @@ std::string which(const std::string &command) {
 
     execlp("which", "which", "--", command.c_str(), nullptr);
     child_failed();
-  }
-  else {
+  } else {
     if(stdout_pipe.close_write() < 0)
       throw std::system_error(errno, std::system_category());
 
