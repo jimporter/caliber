@@ -76,7 +76,18 @@ matrix:
 
     # GCC builds
 
-    # This could work in gcc-8 if we explicitly linked to -lstdc++fs...
+    - compiler: gcc
+      env: >
+        EXTRAOPTS=--with-boost-filesystem COMPILER=g++-8
+        EXTRAFLAGS=-Wsuggest-override
+      addons:
+        apt:
+          sources: *sources
+          packages:
+            - *packages
+            - g++-8
+            - libboost-filesystem-dev
+            - libstdc++-8-dev
 
     - compiler: gcc
       env: COMPILER=g++-9 EXTRAFLAGS=-Wsuggest-override
@@ -91,17 +102,19 @@ matrix:
 
     - os: osx
       osx_image: xcode11.3
-      env: PYTHON=python2 PIP=pip2 COMPILER=clang++
+      env: >
+        PYTHON=python2 PIP=pip2 EXTRAOPTS=--with-boost-filesystem
+        COMPILER=clang++
 
     # C++20 builds
 
     - compiler: clang
-      env: EXTRAOPTS="--std=c++2a" COMPILER=clang++-9
+      env: EXTRAOPTS=--std=c++2a COMPILER=clang++-9
       addons: *clang-9
 
     - compiler: gcc
       env: >
-        EXTRAOPTS="--std=c++2a" COMPILER=g++-9 EXTRAFLAGS=-Wsuggest-override
+        EXTRAOPTS=--std=c++2a COMPILER=g++-9 EXTRAFLAGS=-Wsuggest-override
       addons: *gcc-9
 
 before_install:

@@ -4,9 +4,17 @@
 #include <sys/wait.h>
 
 #include <cassert>
-#include <filesystem>
 #include <stdexcept>
 #include <system_error>
+
+#ifdef CALIBER_BOOST_FILESYSTEM
+#  include <boost/filesystem.hpp>
+#  define FILESYSTEM_NS boost::filesystem
+#else
+#  include <filesystem>
+#  define FILESYSTEM_NS std::filesystem
+#endif
+
 
 #include <mettle/driver/exit_code.hpp>
 #include <mettle/driver/posix/scoped_pipe.hpp>
@@ -82,14 +90,14 @@ std::vector<std::string>
 translate_args(const std::string &file, const compiler_options &args) {
   // XXX: This will eventually need to support different compiler front-ends.
 
-  auto base_path = std::filesystem::path(file).parent_path();
+  auto base_path = FILESYSTEM_NS::path(file).parent_path();
   std::vector<std::string> result;
   for(const auto &arg : args) {
     if(arg.string_key == "std") {
       result.push_back("-std=" + arg.value.front());
     } else if(arg.string_key == "-I") {
       result.push_back("-I");
-      result.push_back(base_path / arg.value.front());
+      result.push_back((base_path / arg.value.front()).string());
     } else {
       result.push_back(arg.string_key);
       result.insert(result.end(), arg.value.begin(), arg.value.end());

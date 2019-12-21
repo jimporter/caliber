@@ -5,7 +5,10 @@ project('caliber', version='0.1-dev')
 
 global_options([opts.std(argv.std)], lang='c++')
 
-boost = boost_package(['program_options', 'iostreams'], version='>=1.55')
+boost = boost_package(['program_options', 'iostreams'] + (
+    ['filesystem', 'system'] if argv.boost_filesystem else []
+), version='>=1.55')
+
 libmettle = package('mettle', headers=['mettle.hpp'])
 mettle = test_driver(
     ['mettle', '--output=verbose'],
@@ -14,7 +17,9 @@ mettle = test_driver(
 
 caliber_objs = object_files(
     files=find_files('src', '*.cpp'),
-    packages=[libmettle, boost]
+    packages=[libmettle, boost],
+    options=([opts.define('CALIBER_BOOST_FILESYSTEM')] if argv.boost_filesystem
+             else [])
 )
 caliber = executable(
     'caliber',
