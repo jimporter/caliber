@@ -87,6 +87,12 @@ matrix:
             - *packages
             - g++-9
 
+    # macOS builds
+
+    - os: osx
+      osx_image: xcode11.3
+      env: PYTHON=python2 PIP=pip2 COMPILER=clang++
+
     # C++20 builds
 
     - compiler: clang
