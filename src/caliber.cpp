@@ -98,7 +98,7 @@ int main(int argc, const char *argv[]) {
   }
 
   try {
-    caliber::test_compiler compiler(args.tool, *args.timeout);
+    caliber::test_compiler compiler(args.tool, args.timeout);
 
     if(args.output_fd) {
       if(auto output_opt = has_option(output, vm)) {

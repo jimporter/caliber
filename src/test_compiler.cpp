@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #include <cstdlib>
-#include <regex>
+#include <cstring>
 #include <sstream>
 
 #include <mettle/driver/exit_code.hpp>
@@ -15,6 +15,9 @@
 #include <mettle/driver/posix/scoped_signal.hpp>
 #include <mettle/driver/posix/subprocess.hpp>
 #include <mettle/output.hpp>
+
+// XXX: Use std::source_location instead when we're able.
+#define PARENT_FAILED() parent_failed(__FILE__, __LINE__)
 
 namespace caliber {
 
@@ -45,11 +48,14 @@ namespace {
 #endif
   }
 
-  inline mettle::test_result parent_failed() {
+  mettle::test_result parent_failed(const char *file, std::size_t line) {
     if(test_pgid)
       killpg(test_pgid, SIGKILL);
     test_pgid = 0;
-    return { false, err_string(errno) };
+
+    std::ostringstream ss;
+    ss << "Fatal error at " << file << ":" << line << "\n" << err_string(errno);
+    return { false, ss.str() };
   }
 
   [[noreturn]] inline void child_failed() {
@@ -78,7 +84,7 @@ test_compiler::operator ()(
   if(stdout_pipe.open() < 0 ||
      stderr_pipe.open() < 0 ||
      pgid_pipe.open(O_CLOEXEC) < 0)
-    return parent_failed();
+    return PARENT_FAILED();
 
   std::vector<std::string> final_args = {compiler_.path.c_str()};
   for(auto &&tok : translate_args(file, args))
@@ -93,11 +99,11 @@ test_compiler::operator ()(
   scoped_sigprocmask mask;
   if(mask.push(SIG_BLOCK, SIGCHLD) < 0 ||
      mask.push(SIG_BLOCK, {SIGINT, SIGQUIT}) < 0)
-    return parent_failed();
+    return PARENT_FAILED();
 
   pid_t pid;
   if((pid = fork()) < 0)
-    return parent_failed();
+    return PARENT_FAILED();
 
   if(pid == 0) {
     if(mask.clear() < 0)
@@ -112,9 +118,6 @@ test_compiler::operator ()(
        stderr_pipe.move_write(STDERR_FILENO) < 0)
       child_failed();
 
-    if(timeout_)
-      make_timeout_monitor(*timeout_);
-
     // Make a new process group so we can kill the test and all its children
     // as a group.
     if(setpgid(0, 0) < 0)
@@ -122,6 +125,9 @@ test_compiler::operator ()(
 
     if(send_pgid(pgid_pipe.write_fd, getpgid(0)) < 0)
       child_failed();
+
+    if(timeout_)
+      make_timeout_monitor(*timeout_);
 
     execvp(compiler_.path.c_str(), make_argv(final_args).get());
     child_failed();
@@ -131,22 +137,22 @@ test_compiler::operator ()(
     if(stdout_pipe.close_write() < 0 ||
        stderr_pipe.close_write() < 0 ||
        pgid_pipe.close_write() < 0)
-      return parent_failed();
+      return PARENT_FAILED();
 
     if(recv_pgid(pgid_pipe.read_fd, &test_pgid) < 0)
-      return parent_failed();
+      return PARENT_FAILED();
 
     if(sigaction(SIGINT, nullptr, &old_sigint) < 0 ||
        sigaction(SIGQUIT, nullptr, &old_sigquit) < 0)
-      return parent_failed();
+      return PARENT_FAILED();
 
     if(sigint.open(SIGINT, sig_handler) < 0 ||
        sigquit.open(SIGQUIT, sig_handler) < 0 ||
        sigchld.open(SIGCHLD, sig_chld) < 0)
-      return parent_failed();
+      return PARENT_FAILED();
 
     if(mask.pop() < 0)
-      return parent_failed();
+      return PARENT_FAILED();
 
     std::vector<readfd> dests = {
       {stdout_pipe.read_fd, &output.stdout_log},
@@ -160,15 +166,15 @@ test_compiler::operator ()(
     sigemptyset(&empty);
     if(read_into(dests, nullptr, &empty) < 0) {
       if(errno != EINTR)
-        return parent_failed();
+        return PARENT_FAILED();
       timespec timeout = {0, 0};
       if(read_into(dests, &timeout, nullptr) < 0)
-        return parent_failed();
+        return PARENT_FAILED();
     }
 
     int status;
     if(waitpid(pid, &status, 0) < 0)
-      return parent_failed();
+      return PARENT_FAILED();
 
     // Make sure everything in the test's process group is dead. Don't worry
     // about reaping.
