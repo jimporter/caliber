@@ -1,4 +1,4 @@
-#include "test_compiler.hpp"
+#include "../compilation_test_runner.hpp"
 
 #include <fcntl.h>
 #include <poll.h>
@@ -73,7 +73,7 @@ namespace caliber {
   }
 
   mettle::test_result
-  test_compiler::operator ()(
+  compilation_test_runner::operator ()(
     const std::string &file, const compiler_options &args,
     const raw_options &raw_args, bool expect_fail,
     mettle::log::test_output &output

@@ -6,7 +6,6 @@
 #include <boost/program_options.hpp>
 
 #include "cmd_line.hpp"
-#include "test_compiler.hpp"
 
 namespace caliber {
 
@@ -40,7 +39,7 @@ namespace caliber {
 
     void run_test_file(
       const std::vector<std::string> &test_suite, const std::string &file,
-      mettle::log::test_logger &logger, const test_compiler &compiler,
+      mettle::log::test_logger &logger, const compilation_test_runner &runner,
       const mettle::filter_set &filter
     ) {
       mettle::test_name name = {test_suite, file, generate_id()};
@@ -85,16 +84,16 @@ namespace caliber {
 
       if(action.action == mettle::test_action::skip)
         return logger.skipped_test(name, action.message);
-      if(!match_flavors(compiler.compiler(), args.compilers)) {
+      if(!match_flavors(runner.compiler(), args.compilers)) {
         return logger.skipped_test(
-          name, "test skipped for " + compiler.compiler().brand
+          name, "test skipped for " + runner.compiler().brand
         );
       }
 
       using namespace std::chrono;
       auto then = steady_clock::now();
-      auto result = compiler(file, comp_args, args.raw_args, args.expect_fail,
-                             output);
+      auto result = runner(file, comp_args, args.raw_args, args.expect_fail,
+                           output);
       auto now = steady_clock::now();
       auto duration = duration_cast<mettle::log::test_duration>(now - then);
 
@@ -107,7 +106,7 @@ namespace caliber {
 
   void run_test_files(
     const std::string &suite_name, const std::vector<std::string> &files,
-    mettle::log::test_logger &logger, const test_compiler &compiler,
+    mettle::log::test_logger &logger, const compilation_test_runner &runner,
     const mettle::filter_set &filter
   ) {
     const std::vector<std::string> test_suite = {suite_name};
@@ -116,7 +115,7 @@ namespace caliber {
     logger.started_suite(test_suite);
 
     for(const auto &file : files)
-      run_test_file(test_suite, file, logger, compiler, filter);
+      run_test_file(test_suite, file, logger, runner, filter);
 
     logger.ended_suite(test_suite);
     logger.ended_run();

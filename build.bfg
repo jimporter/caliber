@@ -16,7 +16,7 @@ mettle = test_driver(
 )
 
 caliber_objs = object_files(
-    files=find_files('src', '*.cpp'),
+    files=find_files('src', '*.cpp', filter=filter_by_platform),
     packages=[libmettle, boost],
     options=([opts.define('CALIBER_BOOST_FILESYSTEM')] if argv.boost_filesystem
              else [])
@@ -30,7 +30,7 @@ caliber = executable(
 install(caliber)
 
 extra_files = {
-    'test/test_compiler.cpp': ['src/compiler.cpp'],
+    'test/test_compiler.cpp': ['src/compiler.cpp', 'src/posix/subprocess.cpp'],
 }
 
 driver = test_driver(caliber, parent=mettle)

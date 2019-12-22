@@ -1,5 +1,5 @@
-#ifndef INC_CALIBER_SRC_TEST_COMPILER_HPP
-#define INC_CALIBER_SRC_TEST_COMPILER_HPP
+#ifndef INC_CALIBER_SRC_COMPILATION_TEST_RUNNER_HPP
+#define INC_CALIBER_SRC_COMPILATION_TEST_RUNNER_HPP
 
 #include <chrono>
 #include <optional>
@@ -11,15 +11,13 @@
 
 namespace caliber {
 
-  class test_compiler {
+  class compilation_test_runner {
   public:
     using timeout_t = std::optional<std::chrono::milliseconds>;
 
-    test_compiler(std::unique_ptr<const caliber::compiler> compiler,
+    compilation_test_runner(std::unique_ptr<const caliber::compiler> compiler,
                   timeout_t timeout = {})
       : compiler_(std::move(compiler)), timeout_(timeout) {}
-    test_compiler(const test_compiler &) = delete;
-    test_compiler & operator =(const test_compiler &) = delete;
 
     mettle::test_result
     operator ()(const std::string &file, const compiler_options &args,

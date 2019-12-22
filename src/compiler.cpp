@@ -1,11 +1,15 @@
 #include "compiler.hpp"
 
-#include <unistd.h>
-#include <sys/wait.h>
-
 #include <cassert>
 #include <stdexcept>
-#include <system_error>
+
+#ifndef _WIN32
+#  include "posix/subprocess.hpp"
+namespace platform = caliber::posix;
+#else
+#  include "windows/subprocess.hpp"
+namespace platform = caliber::windows;
+#endif
 
 #ifdef CALIBER_BOOST_FILESYSTEM
 #  include <boost/filesystem.hpp>
@@ -15,56 +19,9 @@
 #  define FILESYSTEM_NS std::filesystem
 #endif
 
-#include <mettle/driver/exit_code.hpp>
-#include <mettle/driver/posix/scoped_pipe.hpp>
-
 namespace caliber {
 
   namespace {
-
-    [[noreturn]] inline void child_failed() {
-      _exit(mettle::exit_code::fatal);
-    }
-
-    std::string slurp(const char *argv[]) {
-      mettle::posix::scoped_pipe stdout_pipe;
-      if(stdout_pipe.open() < 0)
-        throw std::system_error(errno, std::system_category());
-
-      pid_t pid;
-      if((pid = fork()) < 0)
-        throw std::system_error(errno, std::system_category());
-      if(pid == 0) {
-        if(stdout_pipe.close_read() < 0 ||
-           stdout_pipe.move_write(STDOUT_FILENO) < 0 ||
-           dup2(STDOUT_FILENO, STDERR_FILENO) < 0)
-          child_failed();
-
-        execvp(argv[0], const_cast<char**>(argv));
-        child_failed();
-      } else {
-        if(stdout_pipe.close_write() < 0)
-          throw std::system_error(errno, std::system_category());
-
-        std::string stdout;
-        ssize_t size;
-        char buf[BUFSIZ];
-
-        do {
-          if((size = read(stdout_pipe.read_fd, buf, sizeof(buf))) < 0)
-            throw std::system_error(errno, std::system_category());
-          stdout.append(buf, size);
-        } while(size != 0);
-
-        int status;
-        if(waitpid(pid, &status, 0) < 0)
-          throw std::system_error(errno, std::system_category());
-        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0)
-          throw std::runtime_error("subprocess failed");
-
-        return stdout;
-      }
-    }
 
     struct cc_compiler : compiler {
       cc_compiler(std::string path, std::string brand)
@@ -99,7 +56,7 @@ namespace caliber {
     std::pair<std::string, std::string> detect_flavor(const std::string &path) {
       const char *argv[] = {path.c_str(), "--version", nullptr};
       try {
-        auto stdout = slurp(argv);
+        auto stdout = platform::slurp(argv);
         if(stdout.find("Free Software Foundation") != std::string::npos)
           return {"gcc", "cc"};
         else if(stdout.find("clang") != std::string::npos)
@@ -110,6 +67,7 @@ namespace caliber {
         throw std::runtime_error("unable to determine compiler flavor");
       }
     }
+
   }
 
   std::unique_ptr<const compiler>
