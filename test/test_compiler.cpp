@@ -41,13 +41,35 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
       expect(c->match_flavor("msvc"), equal_to(false));
     });
 
+    _.test("cl (microsoft)", [](test_env &) {
+      auto c = caliber::make_compiler("cl");
+      expect(c->path, equal_to("cl"));
+      expect(c->brand, equal_to("msvc"));
+      expect(c->flavor, equal_to("msvc"));
+
+      expect(c->match_flavor("clang"), equal_to(false));
+      expect(c->match_flavor("cc"), equal_to(false));
+      expect(c->match_flavor("msvc"), equal_to(true));
+    });
+
+    _.test("generic msvc", [](test_env &) {
+      auto c = caliber::make_compiler("msvc");
+      expect(c->path, equal_to("msvc"));
+      expect(c->brand, equal_to("unknown"));
+      expect(c->flavor, equal_to("msvc"));
+
+      expect(c->match_flavor("clang"), equal_to(false));
+      expect(c->match_flavor("cc"), equal_to(false));
+      expect(c->match_flavor("msvc"), equal_to(true));
+    });
+
     _.test("unknown compiler", [](test_env &) {
       expect([]() { caliber::make_compiler("program"); },
              thrown<std::runtime_error>("unable to determine compiler flavor"));
     });
   });
 
-  subsuite<compiler_ptr>(_, "translate args", [](auto &_) {
+  subsuite<compiler_ptr>(_, "translate args (cc)", [](auto &_) {
     _.setup([](test_env &, compiler_ptr &c) {
       c = caliber::make_compiler("g++");
     });
@@ -69,14 +91,49 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
 
     _.test("-D/-U", [](test_env &, compiler_ptr &c) {
       expect(c->translate_args("src.cpp", {{"-D", {"foo"}}}, {}),
-             array(c->path, "-D", "foo", "-fsyntax-only", "src.cpp"));
+             array(c->path, "-Dfoo", "-fsyntax-only", "src.cpp"));
       expect(c->translate_args("src.cpp", {{"-U", {"foo"}}}, {}),
-             array(c->path, "-U", "foo", "-fsyntax-only", "src.cpp"));
+             array(c->path, "-Ufoo", "-fsyntax-only", "src.cpp"));
     });
 
     _.test("raw args", [](test_env &, compiler_ptr &c) {
-      expect(c->translate_args("src.cpp", {}, {{"cc", "-Wall"}}),
-             array(c->path, "-Wall", "-fsyntax-only", "src.cpp"));
+      expect(c->translate_args(
+        "src.cpp", {}, {{"cc", "-Wall"}, {"msvc", "/WX"}}
+      ), array(c->path, "-Wall", "-fsyntax-only", "src.cpp"));
+    });
+  });
+
+  subsuite<compiler_ptr>(_, "translate args (msvc)", [](auto &_) {
+    _.setup([](test_env &, compiler_ptr &c) {
+      c = caliber::make_compiler("cl");
+    });
+
+    _.test("empty", [](test_env &, compiler_ptr &c) {
+      expect(c->translate_args("src.cpp", {}, {}),
+             array(c->path, "/Zs", "src.cpp"));
+    });
+
+    _.test("--std", [](test_env &, compiler_ptr &c) {
+      expect(c->translate_args("src.cpp", {{"std", {"c++11"}}}, {}),
+             array(c->path, "/std:c++11", "/Zs", "src.cpp"));
+    });
+
+    _.test("-I", [](test_env &, compiler_ptr &c) {
+      expect(c->translate_args("src.cpp", {{"-I", {"include"}}}, {}),
+             array(c->path, "/Iinclude", "/Zs", "src.cpp"));
+    });
+
+    _.test("-D/-U", [](test_env &, compiler_ptr &c) {
+      expect(c->translate_args("src.cpp", {{"-D", {"foo"}}}, {}),
+             array(c->path, "/Dfoo", "/Zs", "src.cpp"));
+      expect(c->translate_args("src.cpp", {{"-U", {"foo"}}}, {}),
+             array(c->path, "/Ufoo", "/Zs", "src.cpp"));
+    });
+
+    _.test("raw args", [](test_env &, compiler_ptr &c) {
+      expect(c->translate_args(
+        "src.cpp", {}, {{"cc", "-Wall"}, {"msvc", "/WX"}}
+      ), array(c->path, "/WX", "/Zs", "src.cpp"));
     });
   });
 });
