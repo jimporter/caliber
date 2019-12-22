@@ -19,11 +19,11 @@ namespace caliber {
   using raw_options = std::vector<raw_option>;
 
   struct compiler {
-    compiler(std::string path, std::string brand, std::string flavor);
+    compiler(std::string path, std::string brand, std::string flavor)
+      : path(std::move(path)), brand(std::move(brand)),
+        flavor(std::move(flavor)) {}
 
-    std::string path;
-    std::string brand;
-    std::string flavor;
+    virtual ~compiler() {}
 
     inline bool match_flavor(const std::string &query) const {
       return query == flavor || (brand != "unknown" && query == brand);
@@ -31,9 +31,13 @@ namespace caliber {
 
     // Eventually, this should be virtual so we can implement different flavors
     // of compiler (i.e. msvc vs cc).
-    std::vector<std::string>
+    virtual std::vector<std::string>
     translate_args(const std::string &src, const compiler_options &args,
-                   const raw_options &raw_args) const;
+                   const raw_options &raw_args) const = 0;
+
+    std::string path;
+    std::string brand;
+    std::string flavor;
   };
 
   std::unique_ptr<const compiler>
