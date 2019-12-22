@@ -7,6 +7,7 @@
 #include <boost/program_options.hpp>
 
 #include <mettle/driver/cmd_line.hpp>
+#include <mettle/driver/exit_code.hpp>
 #include <mettle/driver/log/child.hpp>
 #include <mettle/driver/log/summary.hpp>
 #include <mettle/driver/log/term.hpp>
@@ -78,7 +79,7 @@ int main(int argc, const char *argv[]) {
     opts::notify(vm);
   } catch(const std::exception &e) {
     caliber::report_error(e.what());
-    return 2;
+    return exit_code::bad_args;
   }
 
   if(args.show_help) {
@@ -89,12 +90,12 @@ int main(int argc, const char *argv[]) {
     opts::options_description displayed;
     displayed.add(generic).add(driver).add(output).add(per_file);
     std::cout << displayed << std::endl;
-    return 0;
+    return exit_code::success;
   }
 
   if(args.files.empty()) {
     caliber::report_error("no inputs specified");
-    return 1;
+    return exit_code::no_inputs;
   }
 
   try {
@@ -106,7 +107,7 @@ int main(int argc, const char *argv[]) {
         using namespace opts::command_line_style;
         caliber::report_error(output_opt->canonical_display_name(allow_long) +
                               " can't be used with --output-fd");
-        return 2;
+        return exit_code::bad_args;
       }
 
       make_fd_private(*args.output_fd);
@@ -117,7 +118,7 @@ int main(int argc, const char *argv[]) {
       log::child logger(fds);
       caliber::run_test_files(args.suite_name, args.files, logger, compiler,
                               args.filters);
-      return 0;
+      return exit_code::success;
     }
 
     term::enable(std::cout, color_enabled(args.color));
@@ -131,9 +132,9 @@ int main(int argc, const char *argv[]) {
                             args.filters);
 
     logger.summarize();
-    return !logger.good();
+    return logger.good() ? exit_code::success : exit_code::failure;
   } catch(const std::exception &e) {
     caliber::report_error(e.what());
-    return 3;
+    return exit_code::unknown_error;
   }
 }
