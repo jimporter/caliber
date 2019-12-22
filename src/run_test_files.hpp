@@ -8,11 +8,11 @@
 
 namespace caliber {
 
-void run_test_files(
-  const std::string &suite_name, const std::vector<std::string> &files,
-  mettle::log::test_logger &logger, const test_compiler &compiler,
-  const mettle::filter_set &filter
-);
+  void run_test_files(
+    const std::string &suite_name, const std::vector<std::string> &files,
+    mettle::log::test_logger &logger, const test_compiler &compiler,
+    const mettle::filter_set &filter
+  );
 
 } // namespace caliber
 

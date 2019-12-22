@@ -18,25 +18,25 @@
 
 namespace caliber {
 
-namespace {
-  struct all_options : mettle::generic_options, mettle::driver_options,
-                       mettle::output_options {
-    all_options() {
-      auto cxx = getenv("CXX");
-      tool = cxx ? cxx : "c++";
+  namespace {
+    struct all_options : mettle::generic_options, mettle::driver_options,
+                         mettle::output_options {
+      all_options() {
+        auto cxx = getenv("CXX");
+        tool = cxx ? cxx : "c++";
+      }
+
+      std::string suite_name = "compilation tests";
+      std::string tool;
+      std::optional<int> output_fd;
+      std::vector<std::string> files;
+    };
+
+    const char program_name[] = "caliber";
+    void report_error(const std::string &message) {
+      std::cerr << program_name << ": " << message << std::endl;
     }
-
-    std::string suite_name = "compilation tests";
-    std::string tool;
-    std::optional<int> output_fd;
-    std::vector<std::string> files;
-  };
-
-  const char program_name[] = "caliber";
-  void report_error(const std::string &message) {
-    std::cerr << program_name << ": " << message << std::endl;
   }
-}
 
 } // namespace caliber
 
@@ -131,8 +131,7 @@ int main(int argc, const char *argv[]) {
 
     logger.summarize();
     return !logger.good();
-  }
-  catch(const std::exception &e) {
+  } catch(const std::exception &e) {
     caliber::report_error(e.what());
     return 3;
   }

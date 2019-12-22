@@ -9,29 +9,29 @@
 
 namespace caliber {
 
-struct tool {
-  tool(const char *filename) : tool(std::string(filename)) {}
-  tool(std::string filename);
+  struct tool {
+    tool(const char *filename) : tool(std::string(filename)) {}
+    tool(std::string filename);
 
-  std::string path;
-  std::vector<std::string> identity;
-};
+    std::string path;
+    std::vector<std::string> identity;
+  };
 
-inline bool tool_match(const tool &t, const std::string &name) {
-  return std::find(t.identity.begin(), t.identity.end(), name) !=
-    t.identity.end();
-}
+  inline bool tool_match(const tool &t, const std::string &name) {
+    return std::find(t.identity.begin(), t.identity.end(), name) !=
+      t.identity.end();
+  }
 
-struct raw_option {
-  std::string tool;
-  std::string value;
-};
+  struct raw_option {
+    std::string tool;
+    std::string value;
+  };
 
-using compiler_options = std::vector<boost::program_options::option>;
-using raw_options = std::vector<raw_option>;
+  using compiler_options = std::vector<boost::program_options::option>;
+  using raw_options = std::vector<raw_option>;
 
-std::vector<std::string>
-translate_args(const std::string &file, const compiler_options &args);
+  std::vector<std::string>
+  translate_args(const std::string &file, const compiler_options &args);
 
 } // namespace caliber
 
