@@ -66,7 +66,7 @@ namespace caliber {
       }
     }
 
-    std::vector<std::string> detect_flavor(const std::string &path) {
+    std::pair<std::string, std::string> detect_flavor(const std::string &path) {
       const char *argv[] = {path.c_str(), "--version", nullptr};
       try {
         auto stdout = slurp(argv);
@@ -75,22 +75,25 @@ namespace caliber {
         else if(stdout.find("clang") != std::string::npos)
           return {"clang", "cc"};
         else
-          return {"cc"};
+          return {"unknown", "cc"};
       } catch (const std::runtime_error &) {
-        return {};
+        throw std::runtime_error("unable to determine compiler flavor");
       }
     }
   }
 
-  std::unique_ptr<compiler>
+  std::unique_ptr<const compiler>
   make_compiler(const std::string &path) {
     // XXX: Once we support Windows, this will need to handle deciding whether
     // to make an `msvc_compiler` object or a `cc_compiler` one.
-    return std::make_unique<compiler>(path, detect_flavor(path));
+    auto [brand, flavor] = detect_flavor(path);
+    return std::make_unique<compiler>(path, std::move(brand),
+                                      std::move(flavor));
   }
 
-  compiler::compiler(std::string path, std::vector<std::string> flavor)
-    : path(std::move(path)), flavor(std::move(flavor)) {}
+  compiler::compiler(std::string path, std::string brand, std::string flavor)
+    : path(std::move(path)), brand(std::move(brand)),
+      flavor(std::move(flavor)) {}
 
   std::vector<std::string>
   compiler::translate_args(const std::string &src,

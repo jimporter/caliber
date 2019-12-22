@@ -87,7 +87,7 @@ namespace caliber {
         return logger.skipped_test(name, action.message);
       if(!match_flavors(compiler.compiler(), args.compilers)) {
         return logger.skipped_test(
-          name, "test skipped for " + compiler.compiler().flavor[0]
+          name, "test skipped for " + compiler.compiler().brand
         );
       }
 

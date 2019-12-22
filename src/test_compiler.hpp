@@ -15,7 +15,7 @@ namespace caliber {
   public:
     using timeout_t = std::optional<std::chrono::milliseconds>;
 
-    test_compiler(std::unique_ptr<caliber::compiler> compiler,
+    test_compiler(std::unique_ptr<const caliber::compiler> compiler,
                   timeout_t timeout = {})
       : compiler_(std::move(compiler)), timeout_(timeout) {}
     test_compiler(const test_compiler &) = delete;
@@ -30,7 +30,7 @@ namespace caliber {
       return *compiler_;
     }
   private:
-    std::unique_ptr<caliber::compiler> compiler_;
+    std::unique_ptr<const caliber::compiler> compiler_;
     timeout_t timeout_;
   };
 
