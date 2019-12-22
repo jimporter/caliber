@@ -1,4 +1,4 @@
-#include "tool.hpp"
+#include "compiler.hpp"
 
 #include <unistd.h>
 #include <sys/wait.h>
@@ -66,8 +66,8 @@ namespace caliber {
       }
     }
 
-    std::vector<std::string> get_identity(const std::string &name) {
-      const char *argv[] = {name.c_str(), "--version", nullptr};
+    std::vector<std::string> detect_flavor(const std::string &path) {
+      const char *argv[] = {path.c_str(), "--version", nullptr};
       try {
         auto stdout = slurp(argv);
         if(stdout.find("Free Software Foundation") != std::string::npos)
@@ -82,15 +82,22 @@ namespace caliber {
     }
   }
 
-  tool::tool(std::string filename)
-    : path(std::move(filename)), identity(get_identity(path)) {}
+  std::unique_ptr<compiler>
+  make_compiler(const std::string &path) {
+    // XXX: Once we support Windows, this will need to handle deciding whether
+    // to make an `msvc_compiler` object or a `cc_compiler` one.
+    return std::make_unique<compiler>(path, detect_flavor(path));
+  }
+
+  compiler::compiler(std::string path, std::vector<std::string> flavor)
+    : path(std::move(path)), flavor(std::move(flavor)) {}
 
   std::vector<std::string>
-  translate_args(const std::string &file, const compiler_options &args) {
-    // XXX: This will eventually need to support different compiler front-ends.
-
-    auto base_path = FILESYSTEM_NS::path(file).parent_path();
-    std::vector<std::string> result;
+  compiler::translate_args(const std::string &src,
+                           const compiler_options &args,
+                           const raw_options &raw_args) const {
+    auto base_path = FILESYSTEM_NS::path(src).parent_path();
+    std::vector<std::string> result = {path};
     for(const auto &arg : args) {
       if(arg.string_key == "std") {
         result.push_back("-std=" + arg.value.front());
@@ -103,7 +110,12 @@ namespace caliber {
       }
     }
 
-    result.insert(result.end(), {"-fsyntax-only", file});
+    for(const auto &arg : raw_args) {
+      if(match_flavor(arg.flavor))
+        result.push_back(arg.value);
+    }
+
+    result.insert(result.end(), {"-fsyntax-only", src});
     return result;
   }
 

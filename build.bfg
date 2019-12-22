@@ -30,7 +30,7 @@ caliber = executable(
 install(caliber)
 
 extra_files = {
-    'test/test_tool.cpp': ['src/tool.cpp'],
+    'test/test_compiler.cpp': ['src/compiler.cpp'],
 }
 
 driver = test_driver(caliber, parent=mettle)

@@ -87,14 +87,7 @@ namespace caliber {
        pgid_pipe.open(O_CLOEXEC) < 0)
       return PARENT_FAILED();
 
-    std::vector<std::string> final_args = {compiler_.path.c_str()};
-    for(auto &&tok : translate_args(file, args))
-      final_args.push_back(std::move(tok));
-    for(const auto &arg : raw_args) {
-      if(tool_match(compiler_, arg.tool))
-        final_args.push_back(arg.value);
-    }
-
+    auto final_args = compiler_->translate_args(file, args, raw_args);
     fflush(nullptr);
 
     scoped_sigprocmask mask;
@@ -130,7 +123,7 @@ namespace caliber {
       if(timeout_)
         make_timeout_monitor(*timeout_);
 
-      execvp(compiler_.path.c_str(), make_argv(final_args).get());
+      execvp(compiler_->path.c_str(), make_argv(final_args).get());
       child_failed();
     } else {
       scoped_sigaction sigint, sigquit, sigchld;

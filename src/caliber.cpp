@@ -23,11 +23,11 @@ namespace caliber {
                          mettle::output_options {
       all_options() {
         auto cxx = getenv("CXX");
-        tool = cxx ? cxx : "c++";
+        compiler = cxx ? cxx : "c++";
       }
 
       std::string suite_name = "compilation tests";
-      std::string tool;
+      std::string compiler;
       std::optional<int> output_fd;
       std::vector<std::string> files;
     };
@@ -54,8 +54,8 @@ int main(int argc, const char *argv[]) {
   driver.add_options()
     ("suite-name,S", opts::value(&args.suite_name)->value_name("NAME"),
      "the name of the suite containing these tests")
-    ("tool", opts::value(&args.tool)->value_name("TOOL"),
-     "the tool to use for these tests")
+    ("compiler", opts::value(&args.compiler)->value_name("CMD"),
+     "the compiler to use for these tests")
   ;
 
   opts::options_description hidden("Hidden options");
@@ -98,7 +98,8 @@ int main(int argc, const char *argv[]) {
   }
 
   try {
-    caliber::test_compiler compiler(args.tool, args.timeout);
+    caliber::test_compiler compiler(caliber::make_compiler(args.compiler),
+                                    args.timeout);
 
     if(args.output_fd) {
       if(auto output_opt = has_option(output, vm)) {

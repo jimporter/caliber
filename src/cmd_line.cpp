@@ -69,10 +69,10 @@ namespace caliber {
       ("name,n", value(&opts.name)->value_name("NAME"), "the test's name")
       ("attr,a", value(&opts.attrs)->value_name("ATTR"),
        "the test's attributes")
-      ("tool,t", value(&opts.tools)->value_name("NAME"),
-       "the tool to use for this test")
-      (",X", value(&opts.raw_args)->value_name("TOOL=OPTION"),
-       "forward untranslated argument directly to the tool being used")
+      ("compiler,c", value(&opts.compilers)->value_name("NAME"),
+       "the compiler to use for this test")
+      (",X", value(&opts.raw_args)->value_name("FLAVOR=OPTION"),
+       "forward untranslated argument directly to the compiler being used")
     ;
     return desc;
   }

@@ -29,14 +29,13 @@ namespace caliber {
       return filtered;
     }
 
-    bool tool_match_any(const tool &t, const std::vector<std::string> &names) {
-      if(names.empty())
-        return true;
-      for(const auto &name : names) {
-        if(tool_match(t, name))
-          return true;
-      }
-      return false;
+    bool
+    match_flavors(const compiler &c, const std::vector<std::string> &names) {
+      return names.empty() || std::any_of(
+        names.begin(), names.end(), [&c](const std::string &n) {
+          return c.match_flavor(n);
+        }
+      );
     }
 
     void run_test_file(
@@ -86,9 +85,9 @@ namespace caliber {
 
       if(action.action == mettle::test_action::skip)
         return logger.skipped_test(name, action.message);
-      if(!tool_match_any(compiler.tool(), args.tools)) {
+      if(!match_flavors(compiler.compiler(), args.compilers)) {
         return logger.skipped_test(
-          name, "test skipped for " + compiler.tool().identity[0]
+          name, "test skipped for " + compiler.compiler().flavor[0]
         );
       }
 

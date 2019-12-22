@@ -8,7 +8,7 @@
 #include <boost/program_options.hpp>
 #include <mettle/suite/attributes.hpp>
 
-#include "tool.hpp"
+#include "compiler.hpp"
 
 namespace caliber {
 
@@ -41,7 +41,7 @@ namespace caliber {
     bool expect_fail = false;
     std::string name;
     std::vector<std::string> attrs;
-    std::vector<std::string> tools;
+    std::vector<std::string> compilers;
     raw_options raw_args;
   };
 
