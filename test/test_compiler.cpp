@@ -4,13 +4,22 @@ using namespace mettle;
 #include "env_helper.hpp"
 #include "../src/compiler.hpp"
 
+// Run these commands in a cmd shell on Windows so that it can find Python to
+// execute our dummy compilers. We might want to integrate this into caliber
+// itself to be more user-friendly...
+#ifndef _WIN32
+#  define PREFIX ""
+#else
+#  define PREFIX "cmd /c "
+#endif
+
 using compiler_ptr = std::unique_ptr<const caliber::compiler>;
 
 suite<test_env> test_compiler("compilers", [](auto &_) {
   subsuite(_, "construction", [](auto &_) {
     _.test("gcc", [](test_env &) {
-      auto c = caliber::make_compiler("g++");
-      expect(c->path, equal_to("g++"));
+      auto c = caliber::make_compiler(PREFIX "g++.py");
+      expect(c->path, equal_to(PREFIX "g++.py"));
       expect(c->brand, equal_to("gcc"));
       expect(c->flavor, equal_to("cc"));
 
@@ -20,8 +29,8 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
     });
 
     _.test("clang", [](test_env &) {
-      auto c = caliber::make_compiler("clang++");
-      expect(c->path, equal_to("clang++"));
+      auto c = caliber::make_compiler(PREFIX "clang++.py");
+      expect(c->path, equal_to(PREFIX "clang++.py"));
       expect(c->brand, equal_to("clang"));
       expect(c->flavor, equal_to("cc"));
 
@@ -31,8 +40,8 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
     });
 
     _.test("generic cc", [](test_env &) {
-      auto c = caliber::make_compiler("c++");
-      expect(c->path, equal_to("c++"));
+      auto c = caliber::make_compiler(PREFIX "c++.py");
+      expect(c->path, equal_to(PREFIX "c++.py"));
       expect(c->brand, equal_to("unknown"));
       expect(c->flavor, equal_to("cc"));
 
@@ -42,8 +51,8 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
     });
 
     _.test("cl (microsoft)", [](test_env &) {
-      auto c = caliber::make_compiler("cl");
-      expect(c->path, equal_to("cl"));
+      auto c = caliber::make_compiler(PREFIX "cl.py");
+      expect(c->path, equal_to(PREFIX "cl.py"));
       expect(c->brand, equal_to("msvc"));
       expect(c->flavor, equal_to("msvc"));
 
@@ -53,8 +62,8 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
     });
 
     _.test("generic msvc", [](test_env &) {
-      auto c = caliber::make_compiler("msvc");
-      expect(c->path, equal_to("msvc"));
+      auto c = caliber::make_compiler(PREFIX "msvc.py");
+      expect(c->path, equal_to(PREFIX "msvc.py"));
       expect(c->brand, equal_to("unknown"));
       expect(c->flavor, equal_to("msvc"));
 
@@ -64,14 +73,14 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
     });
 
     _.test("unknown compiler", [](test_env &) {
-      expect([]() { caliber::make_compiler("program"); },
+      expect([]() { caliber::make_compiler(PREFIX "program.py"); },
              thrown<std::runtime_error>("unable to determine compiler flavor"));
     });
   });
 
   subsuite<compiler_ptr>(_, "translate args (cc)", [](auto &_) {
     _.setup([](test_env &, compiler_ptr &c) {
-      c = caliber::make_compiler("g++");
+      c = caliber::make_compiler(PREFIX "g++.py");
     });
 
     _.test("empty", [](test_env &, compiler_ptr &c) {
@@ -105,7 +114,7 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
 
   subsuite<compiler_ptr>(_, "translate args (msvc)", [](auto &_) {
     _.setup([](test_env &, compiler_ptr &c) {
-      c = caliber::make_compiler("cl");
+      c = caliber::make_compiler(PREFIX "cl.py");
     });
 
     _.test("empty", [](test_env &, compiler_ptr &c) {

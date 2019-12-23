@@ -112,6 +112,12 @@ namespace caliber {
 
   }
 
+// MSVC doesn't understand [[noreturn]], so just ignore the warning here.
+#if defined(_MSC_VER) && !defined(__clang__)
+#  pragma warning(push)
+#  pragma warning(disable:4715)
+#endif
+
   std::unique_ptr<const compiler>
   make_compiler(const std::string &path) {
     // XXX: Once we support Windows, this will need to handle deciding whether
@@ -124,5 +130,9 @@ namespace caliber {
 
     assert(false && "unknown compiler flavor");
   }
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#  pragma warning(pop)
+#endif
 
 } // namespace caliber

@@ -37,14 +37,14 @@ namespace caliber::posix {
       if(stdout_pipe.close_write() < 0)
         throw std::system_error(errno, std::system_category());
 
-      std::string stdout;
+      std::string output;
       ssize_t size;
       char buf[BUFSIZ];
 
       do {
         if((size = read(stdout_pipe.read_fd, buf, sizeof(buf))) < 0)
           throw std::system_error(errno, std::system_category());
-        stdout.append(buf, size);
+        output.append(buf, size);
       } while(size != 0);
 
       int status;
@@ -53,7 +53,7 @@ namespace caliber::posix {
       if(!WIFEXITED(status) || WEXITSTATUS(status) != 0)
         throw std::runtime_error("subprocess failed");
 
-      return stdout;
+      return output;
     }
   }
 

@@ -29,7 +29,7 @@ namespace caliber {
 
       std::string suite_name = "compilation tests";
       std::string compiler;
-      std::optional<int> output_fd;
+      std::optional<mettle::fd_type> output_fd;
       std::vector<std::string> files;
     };
 
