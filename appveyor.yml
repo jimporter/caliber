@@ -49,10 +49,8 @@ test_script:
   - set PATH=C:\mettle;%PATH%
   - set LIBRARY_PATH=C:\mettle
   - set CPATH=C:\mettle
+  - set CXX=cl.exe
   - set CPPFLAGS=/WX
   - 9k build --backend=ninja
   - cd build
-  #- ninja test
-  - ninja tests
-  - set TEST_DATA=C:\projects\caliber\test\test-data
-  - mettle -overbose --show-terminal test\test_compiler.exe
+  - ninja test

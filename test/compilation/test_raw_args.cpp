@@ -1,4 +1,4 @@
-// caliber -F --name "raw arguments" -X cc=-Wall -X cc=-Werror
+// caliber -F --name "raw arguments" -Xcc=-Wall -Xcc=-Werror -Xmsvc=/We4706
 int main() {
   int i;
   if(i = 0) {}
