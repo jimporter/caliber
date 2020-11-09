@@ -44,21 +44,12 @@ inline void set_env(const std::string &name, const std::string &value) {
 
 struct test_env {
   test_env() {
-    auto old = get_env("PATH");
     auto data = get_env("TEST_DATA");
-    if(old) old_path = *old;
-
     expect("TEST_DATA is in environment", data, is_not(std::nullopt));
     test_data = *data;
-
-    set_env("PATH", test_data + PATHSEP + old_path);
   }
 
-  ~test_env() {
-    set_env("PATH", old_path);
-  }
-
-  std::string test_data, old_path;
+  std::string test_data;
 };
 
 #endif

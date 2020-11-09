@@ -24,14 +24,14 @@ namespace caliber {
   namespace {
 
     struct cc_compiler : compiler {
-      cc_compiler(std::string path, std::string brand)
-        : compiler(std::move(path), std::move(brand), "cc") {}
+      cc_compiler(std::vector<std::string> command, std::string brand)
+        : compiler(std::move(command), std::move(brand), "cc") {}
 
       virtual std::vector<std::string>
       translate_args(const std::string &src, const compiler_options &args,
                      const raw_options &raw_args) const override {
         auto base_path = FILESYSTEM_NS::path(src).parent_path();
-        std::vector<std::string> result = {path};
+        std::vector<std::string> result = command;
         for(const auto &arg : args) {
           if(arg.string_key == "std") {
             result.push_back("-std=" + arg.value.front());
@@ -55,14 +55,14 @@ namespace caliber {
     };
 
     struct msvc_compiler : compiler {
-      msvc_compiler(std::string path, std::string brand)
-        : compiler(std::move(path), std::move(brand), "msvc") {}
+      msvc_compiler(std::vector<std::string> command, std::string brand)
+        : compiler(std::move(command), std::move(brand), "msvc") {}
 
       virtual std::vector<std::string>
       translate_args(const std::string &src, const compiler_options &args,
                      const raw_options &raw_args) const override {
         auto base_path = FILESYSTEM_NS::path(src).parent_path();
-        std::vector<std::string> result = {path};
+        std::vector<std::string> result = command;
         for(const auto &arg : args) {
           if(arg.string_key == "std") {
             result.push_back("/std:" + arg.value.front());
@@ -86,10 +86,21 @@ namespace caliber {
       }
     };
 
-    std::pair<std::string, std::string> detect_flavor(const std::string &path) {
+    std::string
+    call_detect(const std::vector<std::string> &cmd, const char *arg) {
+      auto argv = std::make_unique<const char *[]>(cmd.size() + 2);
+      for(size_t i = 0; i != cmd.size(); i++)
+        argv[i] = const_cast<char*>(cmd[i].c_str());
+      argv[cmd.size()] = arg;
+      argv[cmd.size() + 1] = nullptr;
+
+      return platform::slurp(argv.get());
+    }
+
+    std::pair<std::string, std::string>
+    detect_flavor(const std::vector<std::string> &command) {
       try {
-        const char *argv[] = {path.c_str(), "--version", nullptr};
-        auto output = platform::slurp(argv);
+        auto output = call_detect(command, "--version");
         if(output.find("Free Software Foundation") != std::string::npos)
           return {"gcc", "cc"};
         else if(output.find("clang") != std::string::npos)
@@ -98,8 +109,7 @@ namespace caliber {
           return {"unknown", "cc"};
       } catch (const std::runtime_error &) {
         try {
-          const char *argv[] = {path.c_str(), "/?", nullptr};
-          auto output = platform::slurp(argv);
+          auto output = call_detect(command, "/?");
           if(output.find("Microsoft (R)") != std::string::npos)
             return {"msvc", "msvc"};
           else
@@ -119,14 +129,12 @@ namespace caliber {
 #endif
 
   std::unique_ptr<const compiler>
-  make_compiler(const std::string &path) {
-    // XXX: Once we support Windows, this will need to handle deciding whether
-    // to make an `msvc_compiler` object or a `cc_compiler` one.
-    auto [brand, flavor] = detect_flavor(path);
+  make_compiler(const std::vector<std::string> &command) {
+    auto [brand, flavor] = detect_flavor(command);
     if(flavor == "cc")
-      return std::make_unique<cc_compiler>(path, std::move(brand));
+      return std::make_unique<cc_compiler>(command, std::move(brand));
     else if(flavor == "msvc")
-      return std::make_unique<msvc_compiler>(path, std::move(brand));
+      return std::make_unique<msvc_compiler>(command, std::move(brand));
 
     assert(false && "unknown compiler flavor");
   }

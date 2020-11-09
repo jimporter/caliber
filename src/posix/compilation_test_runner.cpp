@@ -123,7 +123,7 @@ namespace caliber {
       if(timeout_)
         make_timeout_monitor(*timeout_);
 
-      execvp(compiler_->path.c_str(), make_argv(final_args).get());
+      execvp(compiler_->command[0].c_str(), make_argv(final_args).get());
       child_failed();
     } else {
       scoped_sigaction sigint, sigquit, sigchld;

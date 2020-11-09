@@ -4,22 +4,19 @@ using namespace mettle;
 #include "env_helper.hpp"
 #include "../src/compiler.hpp"
 
-// Run these commands in a cmd shell on Windows so that it can find Python to
-// execute our dummy compilers. We might want to integrate this into caliber
-// itself to be more user-friendly...
-#ifndef _WIN32
-#  define PREFIX ""
-#else
-#  define PREFIX "cmd /c "
-#endif
-
 using compiler_ptr = std::unique_ptr<const caliber::compiler>;
+
+auto equal_cmd(const compiler_ptr &c, const std::vector<std::string> &args) {
+  auto cmd = c->command;
+  cmd.insert(cmd.end(), args.begin(), args.end());
+  return equal_to(cmd);
+}
 
 suite<test_env> test_compiler("compilers", [](auto &_) {
   subsuite(_, "construction", [](auto &_) {
-    _.test("gcc", [](test_env &) {
-      auto c = caliber::make_compiler(PREFIX "g++.py");
-      expect(c->path, equal_to(PREFIX "g++.py"));
+    _.test("gcc", [](test_env &e) {
+      auto c = caliber::make_compiler({"python", e.test_data + "/g++.py"});
+      expect(c->command, array("python", e.test_data + "/g++.py"));
       expect(c->brand, equal_to("gcc"));
       expect(c->flavor, equal_to("cc"));
 
@@ -28,9 +25,9 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
       expect(c->match_flavor("msvc"), equal_to(false));
     });
 
-    _.test("clang", [](test_env &) {
-      auto c = caliber::make_compiler(PREFIX "clang++.py");
-      expect(c->path, equal_to(PREFIX "clang++.py"));
+    _.test("clang", [](test_env &e) {
+      auto c = caliber::make_compiler({"python", e.test_data + "/clang++.py"});
+      expect(c->command, array("python", e.test_data + "/clang++.py"));
       expect(c->brand, equal_to("clang"));
       expect(c->flavor, equal_to("cc"));
 
@@ -39,9 +36,9 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
       expect(c->match_flavor("msvc"), equal_to(false));
     });
 
-    _.test("generic cc", [](test_env &) {
-      auto c = caliber::make_compiler(PREFIX "c++.py");
-      expect(c->path, equal_to(PREFIX "c++.py"));
+    _.test("generic cc", [](test_env &e) {
+      auto c = caliber::make_compiler({"python", e.test_data + "/c++.py"});
+      expect(c->command, array("python", e.test_data + "/c++.py"));
       expect(c->brand, equal_to("unknown"));
       expect(c->flavor, equal_to("cc"));
 
@@ -50,9 +47,9 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
       expect(c->match_flavor("msvc"), equal_to(false));
     });
 
-    _.test("cl (microsoft)", [](test_env &) {
-      auto c = caliber::make_compiler(PREFIX "cl.py");
-      expect(c->path, equal_to(PREFIX "cl.py"));
+    _.test("cl (microsoft)", [](test_env &e) {
+      auto c = caliber::make_compiler({"python", e.test_data + "/cl.py"});
+      expect(c->command, array("python", e.test_data + "/cl.py"));
       expect(c->brand, equal_to("msvc"));
       expect(c->flavor, equal_to("msvc"));
 
@@ -61,9 +58,9 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
       expect(c->match_flavor("msvc"), equal_to(true));
     });
 
-    _.test("generic msvc", [](test_env &) {
-      auto c = caliber::make_compiler(PREFIX "msvc.py");
-      expect(c->path, equal_to(PREFIX "msvc.py"));
+    _.test("generic msvc", [](test_env &e) {
+      auto c = caliber::make_compiler({"python", e.test_data + "/msvc.py"});
+      expect(c->command, array("python", e.test_data + "/msvc.py"));
       expect(c->brand, equal_to("unknown"));
       expect(c->flavor, equal_to("msvc"));
 
@@ -72,77 +69,80 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
       expect(c->match_flavor("msvc"), equal_to(true));
     });
 
-    _.test("unknown compiler", [](test_env &) {
-      expect([]() { caliber::make_compiler(PREFIX "program.py"); },
-             thrown<std::runtime_error>("unable to determine compiler flavor"));
+    _.test("unknown compiler", [](test_env &e) {
+      expect([&e]() {
+        caliber::make_compiler({"python", e.test_data + "/program.py"});
+      }, thrown<std::runtime_error>("unable to determine compiler flavor"));
     });
   });
 
   subsuite<compiler_ptr>(_, "translate args (cc)", [](auto &_) {
-    _.setup([](test_env &, compiler_ptr &c) {
-      c = caliber::make_compiler(PREFIX "g++.py");
+    _.setup([](test_env &e, compiler_ptr &c) {
+      c = caliber::make_compiler({"python", e.test_data + "/g++.py"});
     });
 
     _.test("empty", [](test_env &, compiler_ptr &c) {
       expect(c->translate_args("src.cpp", {}, {}),
-             array(c->path, "-fsyntax-only", "src.cpp"));
+             equal_cmd(c, {"-fsyntax-only", "src.cpp"}));
     });
 
     _.test("--std", [](test_env &, compiler_ptr &c) {
       expect(c->translate_args("src.cpp", {{"std", {"c++11"}}}, {}),
-             array(c->path, "-std=c++11", "-fsyntax-only", "src.cpp"));
+             equal_cmd(c, {"-std=c++11", "-fsyntax-only", "src.cpp"}));
     });
 
     _.test("-I", [](test_env &, compiler_ptr &c) {
       expect(c->translate_args("src.cpp", {{"-I", {"include"}}}, {}),
-             array(c->path, "-Iinclude", "-fsyntax-only", "src.cpp"));
+             equal_cmd(c, {"-Iinclude", "-fsyntax-only", "src.cpp"}));
     });
 
     _.test("-D/-U", [](test_env &, compiler_ptr &c) {
       expect(c->translate_args("src.cpp", {{"-D", {"foo"}}}, {}),
-             array(c->path, "-Dfoo", "-fsyntax-only", "src.cpp"));
+             equal_cmd(c, {"-Dfoo", "-fsyntax-only", "src.cpp"}));
       expect(c->translate_args("src.cpp", {{"-U", {"foo"}}}, {}),
-             array(c->path, "-Ufoo", "-fsyntax-only", "src.cpp"));
+             equal_cmd(c, {"-Ufoo", "-fsyntax-only", "src.cpp"}));
     });
 
     _.test("raw args", [](test_env &, compiler_ptr &c) {
-      expect(c->translate_args(
-        "src.cpp", {}, {{"cc", "-Wall"}, {"msvc", "/WX"}}
-      ), array(c->path, "-Wall", "-fsyntax-only", "src.cpp"));
+      expect(
+        c->translate_args("src.cpp", {}, {{"cc", "-Wall"}, {"msvc", "/WX"}}),
+        equal_cmd(c, {"-Wall", "-fsyntax-only", "src.cpp"})
+      );
     });
   });
 
   subsuite<compiler_ptr>(_, "translate args (msvc)", [](auto &_) {
-    _.setup([](test_env &, compiler_ptr &c) {
-      c = caliber::make_compiler(PREFIX "cl.py");
+    _.setup([](test_env &e, compiler_ptr &c) {
+      c = caliber::make_compiler({"python", e.test_data + "/cl.py"});
     });
 
     _.test("empty", [](test_env &, compiler_ptr &c) {
       expect(c->translate_args("src.cpp", {}, {}),
-             array(c->path, "/Zs", "src.cpp"));
+             equal_cmd(c, {"/Zs", "src.cpp"}));
     });
 
     _.test("--std", [](test_env &, compiler_ptr &c) {
       expect(c->translate_args("src.cpp", {{"std", {"c++11"}}}, {}),
-             array(c->path, "/std:c++11", "/Zs", "src.cpp"));
+             equal_cmd(c, {"/std:c++11", "/Zs", "src.cpp"}));
     });
 
     _.test("-I", [](test_env &, compiler_ptr &c) {
       expect(c->translate_args("src.cpp", {{"-I", {"include"}}}, {}),
-             array(c->path, "/Iinclude", "/Zs", "src.cpp"));
+             equal_cmd(c, {"/Iinclude", "/Zs", "src.cpp"}));
     });
 
     _.test("-D/-U", [](test_env &, compiler_ptr &c) {
       expect(c->translate_args("src.cpp", {{"-D", {"foo"}}}, {}),
-             array(c->path, "/Dfoo", "/Zs", "src.cpp"));
+             equal_cmd(c, {"/Dfoo", "/Zs", "src.cpp"}));
       expect(c->translate_args("src.cpp", {{"-U", {"foo"}}}, {}),
-             array(c->path, "/Ufoo", "/Zs", "src.cpp"));
+             equal_cmd(c, {"/Ufoo", "/Zs", "src.cpp"}));
     });
 
     _.test("raw args", [](test_env &, compiler_ptr &c) {
-      expect(c->translate_args(
-        "src.cpp", {}, {{"cc", "-Wall"}, {"msvc", "/WX"}}
-      ), array(c->path, "/WX", "/Zs", "src.cpp"));
+      expect(
+        c->translate_args("src.cpp", {}, {{"cc", "-Wall"}, {"msvc", "/WX"}}),
+        equal_cmd(c, {"/WX", "/Zs", "src.cpp"})
+      );
     });
   });
 });

@@ -19,8 +19,9 @@ namespace caliber {
   using raw_options = std::vector<raw_option>;
 
   struct compiler {
-    compiler(std::string path, std::string brand, std::string flavor)
-      : path(std::move(path)), brand(std::move(brand)),
+    compiler(std::vector<std::string> command, std::string brand,
+             std::string flavor)
+      : command(std::move(command)), brand(std::move(brand)),
         flavor(std::move(flavor)) {}
 
     virtual ~compiler() {}
@@ -35,13 +36,12 @@ namespace caliber {
     translate_args(const std::string &src, const compiler_options &args,
                    const raw_options &raw_args) const = 0;
 
-    std::string path;
-    std::string brand;
-    std::string flavor;
+    std::vector<std::string> command;
+    std::string brand, flavor;
   };
 
   std::unique_ptr<const compiler>
-  make_compiler(const std::string &path);
+  make_compiler(const std::vector<std::string> &command);
 
 } // namespace caliber
 

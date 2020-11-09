@@ -37,6 +37,14 @@ namespace caliber {
     void report_error(const std::string &message) {
       std::cerr << program_name << ": " << message << std::endl;
     }
+
+    std::vector<std::string> split_command(const std::string &command) {
+#ifndef _WIN32
+      return boost::program_options::split_unix(command);
+#else
+      return boost::program_options::split_winmain(command);
+#endif
+    }
   }
 
 } // namespace caliber
@@ -100,7 +108,8 @@ int main(int argc, const char *argv[]) {
 
   try {
     caliber::compilation_test_runner runner(
-      caliber::make_compiler(args.compiler), args.timeout
+      caliber::make_compiler(caliber::split_command(args.compiler)),
+      args.timeout
     );
 
     if(args.output_fd) {
