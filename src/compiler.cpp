@@ -100,20 +100,22 @@ namespace caliber {
     std::pair<std::string, std::string>
     detect_flavor(const std::vector<std::string> &command) {
       try {
-        auto output = call_detect(command, "--version");
-        if(output.find("Free Software Foundation") != std::string::npos)
-          return {"gcc", "cc"};
-        else if(output.find("clang") != std::string::npos)
-          return {"clang", "cc"};
+        auto output = call_detect(command, "-?");
+        if(output.find("Microsoft (R)") != std::string::npos)
+          return {"msvc", "msvc"};
+        else if(output.find("clang LLVM compiler") != std::string::npos)
+          return {"clang-cl", "msvc"}; // XXX: Maybe brand this as "clang"?
         else
-          return {"unknown", "cc"};
+          return {"unknown", "msvc"};
       } catch (const std::runtime_error &) {
         try {
-          auto output = call_detect(command, "/?");
-          if(output.find("Microsoft (R)") != std::string::npos)
-            return {"msvc", "msvc"};
+          auto output = call_detect(command, "--version");
+          if(output.find("Free Software Foundation") != std::string::npos)
+            return {"gcc", "cc"};
+          else if(output.find("clang") != std::string::npos)
+            return {"clang", "cc"};
           else
-            return {"unknown", "msvc"};
+            return {"unknown", "cc"};
         } catch (const std::runtime_error &) {
           throw std::runtime_error("unable to determine compiler flavor");
         }

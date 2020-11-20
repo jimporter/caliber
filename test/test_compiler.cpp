@@ -47,7 +47,7 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
       expect(c->match_flavor("msvc"), equal_to(false));
     });
 
-    _.test("cl (microsoft)", [](test_env &e) {
+    _.test("microsoft cl", [](test_env &e) {
       auto c = caliber::make_compiler({"python", e.test_data + "/cl.py"});
       expect(c->command, array("python", e.test_data + "/cl.py"));
       expect(c->brand, equal_to("msvc"));
@@ -56,6 +56,18 @@ suite<test_env> test_compiler("compilers", [](auto &_) {
       expect(c->match_flavor("clang"), equal_to(false));
       expect(c->match_flavor("cc"), equal_to(false));
       expect(c->match_flavor("msvc"), equal_to(true));
+    });
+
+    _.test("clang-cl", [](test_env &e) {
+      auto c = caliber::make_compiler({"python", e.test_data + "/clang-cl.py"});
+      expect(c->command, array("python", e.test_data + "/clang-cl.py"));
+      expect(c->brand, equal_to("clang-cl"));
+      expect(c->flavor, equal_to("msvc"));
+
+      expect(c->match_flavor("cc"), equal_to(false));
+      expect(c->match_flavor("clang"), equal_to(false));
+      expect(c->match_flavor("msvc"), equal_to(true));
+      expect(c->match_flavor("clang-cl"), equal_to(true));
     });
 
     _.test("generic msvc", [](test_env &e) {

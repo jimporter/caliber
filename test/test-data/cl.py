@@ -3,8 +3,8 @@
 import argparse
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prefix_chars='/')
-    parser.add_argument('/?', action='store_true', dest='help')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-?', action='store_true', dest='help')
     args = parser.parse_args()
     if args.help:
         print('Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27034' +
