@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 
+#define NOMINMAX
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/program_options.hpp>
