@@ -9,6 +9,6 @@ to test code compilation.
 
 This library is licensed under the [BSD 3-Clause license](LICENSE).
 
-[ci-image]: https://github.com/jimporter/caliber/workflows/build/badge.svg
-[ci-link]: https://github.com/jimporter/caliber/actions?query=branch%3Amaster+workflow%3Abuild
+[ci-image]: https://github.com/jimporter/caliber/actions/workflows/build.yml/badge.svg
+[ci-link]: https://github.com/jimporter/caliber/actions/workflows/build.yml?query=branch%3Amaster
 [mettle]: https://github.com/jimporter/mettle
