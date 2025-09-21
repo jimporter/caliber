@@ -139,7 +139,7 @@ int main(int argc, const char *argv[]) {
         *args.output_fd, io::never_close_handle
       );
       log::child logger(fds);
-      caliber::run_test_files(args.suite_name, args.files, logger, runner,
+      caliber::run_test_files({args.suite_name, ""}, args.files, logger, runner,
                               args.filters);
       return exit_code::success;
     }
@@ -151,7 +151,7 @@ int main(int argc, const char *argv[]) {
       out, factory.make(args.output, out, args), args.show_time,
       args.show_terminal
     );
-    caliber::run_test_files(args.suite_name, args.files, logger, runner,
+    caliber::run_test_files({args.suite_name, ""}, args.files, logger, runner,
                             args.filters);
 
     logger.summarize();

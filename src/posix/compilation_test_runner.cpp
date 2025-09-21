@@ -48,15 +48,14 @@ namespace caliber {
 #endif
     }
 
-    mettle::test_result parent_failed(const char *file, std::size_t line) {
+    mettle::test_result
+    parent_failed(const char *file, std::uint_least32_t line) {
       if(test_pgid)
         killpg(test_pgid, SIGKILL);
       test_pgid = 0;
 
-      std::ostringstream ss;
-      ss << "Fatal error at " << file << ":" << line << "\n"
-         << err_string(errno);
-      return { false, ss.str() };
+      return {{ .message = "Fatal error: " + err_string(errno),
+                .file_name = file, .line = line }};
     }
 
     [[noreturn]] inline void child_failed() {
@@ -72,8 +71,7 @@ namespace caliber {
     }
   }
 
-  mettle::test_result
-  compilation_test_runner::operator ()(
+  mettle::test_result compilation_test_runner::operator ()(
     const std::string &file, const compiler_options &args,
     const raw_options &raw_args, bool expect_fail,
     mettle::log::test_output &output
@@ -180,17 +178,20 @@ namespace caliber {
         if(exit_status == mettle::exit_code::timeout) {
           std::ostringstream ss;
           ss << "Timed out after " << timeout_->count() << " ms";
-          return { false, ss.str() };
+          return {{ .message = ss.str() }};
         } else {
+          bool success = exit_status == mettle::exit_code::success;
+          if(success != expect_fail)
+            return std::nullopt;
+
           std::ostringstream ss;
           for(const auto &i : final_args)
             ss << i << " ";
-          bool success = exit_status == mettle::exit_code::success;
           ss << (success ? "\nCompilation successful" : "\nCompilation failed");
-          return {expect_fail != success, ss.str()};
+          return {{ .message = ss.str() }};
         }
       } else { // WIFSIGNALED
-        return { false, strsignal(WTERMSIG(status)) };
+        return {{ .message = strsignal(WTERMSIG(status)) }};
       }
     }
   }

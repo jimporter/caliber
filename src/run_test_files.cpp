@@ -38,11 +38,11 @@ namespace caliber {
     }
 
     void run_test_file(
-      const std::vector<std::string> &test_suite, const std::string &file,
-      mettle::log::test_logger &logger, const compilation_test_runner &runner,
-      const mettle::filter_set &filter
+      const std::vector<mettle::suite_name> &test_suite,
+      const std::string &file, mettle::log::test_logger &logger,
+      const compilation_test_runner &runner, const mettle::filter_set &filter
     ) {
-      mettle::test_name name = {test_suite, file, generate_id()};
+      mettle::test_name name = {generate_id(), test_suite, file, file};
       mettle::log::test_output output;
 
       per_file_options args;
@@ -64,8 +64,8 @@ namespace caliber {
       } catch(const std::exception &e) {
         logger.started_test(name);
         return logger.failed_test(
-          name, std::string("Invalid command: ") + e.what(), output,
-          mettle::log::test_duration(0)
+          name, { .message = std::string("Invalid command: ") + e.what() },
+          output, mettle::log::test_duration(0)
         );
       }
 
@@ -92,24 +92,24 @@ namespace caliber {
 
       using namespace std::chrono;
       auto then = steady_clock::now();
-      auto result = runner(file, comp_args, args.raw_args, args.expect_fail,
+      auto failed = runner(file, comp_args, args.raw_args, args.expect_fail,
                            output);
       auto now = steady_clock::now();
       auto duration = duration_cast<mettle::log::test_duration>(now - then);
 
-      if(result.passed)
-        logger.passed_test(name, output, duration);
+      if(failed)
+        logger.failed_test(name, *failed, output, duration);
       else
-        logger.failed_test(name, result.message, output, duration);
+        logger.passed_test(name, output, duration);
     }
   }
 
   void run_test_files(
-    const std::string &suite_name, const std::vector<std::string> &files,
+    const mettle::suite_name &suite_name, const std::vector<std::string> &files,
     mettle::log::test_logger &logger, const compilation_test_runner &runner,
     const mettle::filter_set &filter
   ) {
-    const std::vector<std::string> test_suite = {suite_name};
+    const std::vector<mettle::suite_name> test_suite = {suite_name};
 
     logger.started_run();
     logger.started_suite(test_suite);

@@ -9,7 +9,7 @@
 namespace caliber {
 
   void run_test_files(
-    const std::string &suite_name, const std::vector<std::string> &files,
+    const mettle::suite_name &suite_name, const std::vector<std::string> &files,
     mettle::log::test_logger &logger, const compilation_test_runner &runner,
     const mettle::filter_set &filter
   );

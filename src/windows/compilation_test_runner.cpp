@@ -31,11 +31,9 @@ namespace caliber {
       return msg;
     }
 
-    mettle::test_result failed(const char *file, std::size_t line) {
-      std::ostringstream ss;
-      ss << "Fatal error at " << file << ":" << line << "\n"
-         << err_string(GetLastError());
-      return {false, ss.str()};
+    mettle::test_result failed(const char *file, std::uint_least32_t line) {
+      return {{ .message = "Fatal error: " + err_string(GetLastError()),
+                .file_name = file, .line = line }};
     }
 
     std::string make_cmd_line(const std::vector<std::string> &argv) {
@@ -133,16 +131,20 @@ namespace caliber {
     if(finished == timeout_event) {
       std::ostringstream ss;
       ss << "Timed out after " << timeout_->count() << " ms";
-      return { false, ss.str() };
+      return {{ .message = ss.str() }};
     } else {
       DWORD exit_status;
       if(!GetExitCodeProcess(proc_info.hProcess, &exit_status))
         return CALIBER_FAILED();
+
+      bool success = exit_status == mettle::exit_code::success;
+      if(success != expect_fail)
+        return std::nullopt;
+
       std::ostringstream ss;
       ss << cmd_line << " ";
-      bool success = exit_status == mettle::exit_code::success;
       ss << (success ? "\nCompilation successful" : "\nCompilation failed");
-      return {expect_fail != success, ss.str()};
+      return {{ .message = ss.str() }};
     }
   }
 
