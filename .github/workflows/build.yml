@@ -75,13 +75,15 @@ jobs:
           key: >
             ${{ matrix.os }}-boost-${{ matrix.boost-version }}-msvc-${{
             matrix.version }}-${{ hashFiles('.github/workflows/build.yml') }}
-      - name: Set up Python 3.10
+      - name: Set up Python 3.14
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.14'
       - name: Install Python dependencies
-        run: |
-          pip install bfg9000
+        run: >-
+          pip install
+          git+https://github.com/jimporter/bfg9000.git
+          git+https://github.com/jimporter/mopack.git
       - name: Install Linux dependencies
         if: startsWith(matrix.os, 'ubuntu-')
         run: >
@@ -103,6 +105,8 @@ jobs:
           7z x -y glib_2.28.8-1_win32.zip -oC:\pkg-config
           7z x -y gettext-runtime_0.18.1.1-2_win32.zip -oC:\pkg-config
           echo "PKG_CONFIG=C:\pkg-config\bin\pkg-config.exe" >> ${env:GITHUB_ENV}
+
+          echo "CXXFLAGS=/W3 /WX ${{ matrix.flags }}" >> ${env:GITHUB_ENV}
       - name: Install macOS dependencies
         if: startsWith(matrix.os, 'macos-')
         run: |
@@ -157,36 +161,6 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           toolset: ${{ matrix.version }}
-      - name: Clone mettle
-        uses: actions/checkout@v4
-        with:
-          repository: jimporter/mettle
-          path: mettle
-      - name: Build mettle
-        if: "!startsWith(matrix.os, 'windows-')"
-        run: |
-          pushd mettle
-          9k build --backend=ninja --prefix=${HOME} ${{ matrix.common-options }}
-          cd build
-          ninja install
-          popd
-          echo "PATH=${HOME}/bin:${PATH}" >> ${GITHUB_ENV}
-          echo "CPATH=${HOME}/include:${CPATH}" >> ${GITHUB_ENV}
-          echo "PKG_CONFIG_PATH=${HOME}/lib/pkgconfig" >> ${GITHUB_ENV}
-          echo "CXXFLAGS=${COMMONFLAGS} ${{ matrix.flags }}" >> ${GITHUB_ENV}
-      - name: Build mettle (Windows)
-        if: startsWith(matrix.os, 'windows-')
-        run: |
-          pushd mettle
-          9k build --backend=ninja --prefix=$env:HOME\mettle ${{ matrix.common-options }}
-          cd build
-          ninja install
-          popd
-          echo "PATH=${env:HOME}\mettle;${env:PATH}" >> ${env:GITHUB_ENV}
-          echo "CPATH=${env:HOME}\mettle" >> ${env:GITHUB_ENV}
-          echo "PKG_CONFIG_PATH=${env:HOME}\mettle\pkgconfig" >> ${env:GITHUB_ENV}
-          echo "CXX=cl.exe" >> ${env:GITHUB_ENV}
-          echo "CXXFLAGS=/WX ${{ matrix.flags }}" >> ${env:GITHUB_ENV}
       - name: Run tests
         run: |
           9k build --backend=ninja ${{ matrix.common-options }} ${{ matrix.options }}

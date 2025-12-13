@@ -11,7 +11,7 @@ boost = package('boost', ['program_options', 'iostreams'] + (
 
 libmettle = package('mettle')
 mettle = test_driver(
-    ['mettle', '--output=verbose'],
+    [system_executable('mettle', package=libmettle), '--output=verbose'],
     environment={'TEST_DATA': directory('test/test-data')},
 )
 
