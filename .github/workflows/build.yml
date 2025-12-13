@@ -14,9 +14,6 @@ jobs:
       ${{ matrix.os }}, ${{ matrix.compiler }}${{
         matrix.version && format('-{0}', matrix.version) || ''
       }}${{
-        matrix.boost-version &&
-        format(', boost-{0}', matrix.boost-version) || ''
-      }}${{
         matrix.extra-desc && format(', {0}', matrix.extra-desc) || ''
       }}
     runs-on: ${{ matrix.os }}
@@ -49,32 +46,21 @@ jobs:
           - {os: ubuntu-24.04, compiler: clang, version: '20', llvm-apt: true}
 
           # Windows builds
-          - {os: windows-latest, compiler: msvc, version: '14.4',  # VS 2022
-             boost-version: '1.80.0'}
+          - {os: windows-2022, compiler: msvc, version: '14.4'}  # VS 2022
 
           # macOS builds
           - {os: macos-latest, compiler: clang}
 
           # C++23 builds
           - {os: ubuntu-24.04, compiler: gcc, version: '14',
-             common-options: '--std=c++23', flags: '-Wsuggest-override',
-             boost-version: '1.85.0', extra-desc: 'c++20'}
+             options: '--std=c++23', flags: '-Wsuggest-override',
+             extra-desc: 'c++20'}
           - {os: ubuntu-24.04, compiler: clang, version: '20', llvm-apt: true,
-             common-options: '--std=c++23', boost-version: '1.85.0',
-             extra-desc: 'c++23'}
+             options: '--std=c++23', extra-desc: 'c++23'}
       fail-fast: false
 
     steps:
       - uses: actions/checkout@v4
-      - name: Cache Boost binaries
-        if: startsWith(matrix.os, 'windows-') && matrix.boost-version
-        uses: actions/cache@v4
-        id: cache-boost
-        with:
-          path: C:\boost-${{ matrix.boost-version }}
-          key: >
-            ${{ matrix.os }}-boost-${{ matrix.boost-version }}-msvc-${{
-            matrix.version }}-${{ hashFiles('.github/workflows/build.yml') }}
       - name: Set up Python 3.14
         uses: actions/setup-python@v5
         with:
@@ -87,12 +73,7 @@ jobs:
       - name: Install Linux dependencies
         if: startsWith(matrix.os, 'ubuntu-')
         run: >
-          sudo apt-get install
-          ninja-build
-          libboost-dev
-          libboost-iostreams-dev
-          libboost-program-options-dev
-          libboost-filesystem-dev
+          sudo apt-get install ninja-build
       - name: Install Windows dependencies
         if: startsWith(matrix.os, 'windows-')
         run: |
@@ -101,35 +82,8 @@ jobs:
       - name: Install macOS dependencies
         if: startsWith(matrix.os, 'macos-')
         run: |
-          brew install boost ninja pkg-config
-          echo "CPATH=/opt/homebrew/include" >> ${GITHUB_ENV}
-          echo "LIBRARY_PATH=/opt/homebrew/lib" >> ${GITHUB_ENV}
-      - name: Install Boost ${{ matrix.boost-version }} from source
-        if: "!startsWith(matrix.os, 'windows-') && matrix.boost-version"
-        run: |
-          export BOOST_ROOT=${HOME}/boost-${{ matrix.boost-version }}
-          export SRCDIR=boost_`echo ${{ matrix.boost-version }} | sed 's/\./_/g'`
-          curl -LO https://sourceforge.net/projects/boost/files/boost/${{ matrix.boost-version }}/${SRCDIR}.tar.bz2
-          tar -xjf ${SRCDIR}.tar.bz2
-          pushd ${SRCDIR}
-          ./bootstrap.sh --prefix=${BOOST_ROOT} --with-libraries=program_options,iostreams
-          ./b2 link=shared threading=multi variant=release -d0
-          ./b2 install -d0
-          popd
-          echo "BOOST_ROOT=${BOOST_ROOT}" >> ${GITHUB_ENV}
-      - name: Install Boost ${{ matrix.boost-version }} from binaries
-        if: startsWith(matrix.os, 'windows-') && matrix.boost-version
-        run: |
-          ${boostroot} = "C:\boost-${{ matrix.boost-version }}"
-          ${msvcver} = "${{ matrix.version }}" -replace '14.4','14.3'
-          if ("${{ steps.cache-boost.outputs.cache-hit }}" -ne "true" ) {
-            ${boost_ver} = "${{ matrix.boost-version }}" -replace '\.','_'
-            ${boostexe} = "boost_${boost_ver}-msvc-${msvcver}-64.exe"
-            curl --retry 3 --retry-all-errors -LO https://sourceforge.net/projects/boost/files/boost-binaries/${{ matrix.boost-version }}/${boostexe}
-            Start-Process -Wait -FilePath ".\${boostexe}" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=${boostroot}"
-          }
-          echo "BOOST_INCLUDEDIR=${boostroot}" >> ${env:GITHUB_ENV}
-          echo "BOOST_LIBRARYDIR=${boostroot}\lib64-msvc-${msvcver}" >> ${env:GITHUB_ENV}
+          brew install ninja pkg-config
+          echo "CXXFLAGS=${COMMONFLAGS} ${{ matrix.flags }}" >> ${GITHUB_ENV}
       - name: Install gcc
         if: startsWith(matrix.os, 'ubuntu-') && matrix.compiler == 'gcc'
         run: |
@@ -137,6 +91,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install g++-${{ matrix.version }}
           echo "CXX=g++-${{ matrix.version }}" >> ${GITHUB_ENV}
+          echo "CXXFLAGS=${COMMONFLAGS} ${{ matrix.flags }}" >> ${GITHUB_ENV}
       - name: Install clang
         if: startsWith(matrix.os, 'ubuntu-') && matrix.compiler == 'clang' &&
           matrix.llvm-apt
@@ -147,13 +102,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install clang-${{ matrix.version }}
           echo "CXX=clang++-${{ matrix.version }}" >> ${GITHUB_ENV}
+          echo "CXXFLAGS=${COMMONFLAGS} ${{ matrix.flags }}" >> ${GITHUB_ENV}
       - name: Initialize MSVC ${{ matrix.version }}
         if: startsWith(matrix.os, 'windows-')
         uses: ilammy/msvc-dev-cmd@v1
         with:
           toolset: ${{ matrix.version }}
+      - name: Configure caliber
+        run: >-
+          9k build --backend=ninja ${{ matrix.options }}
+          -p.github/mopack/boost-1.89.0.yml
       - name: Run tests
         run: |
-          9k build --backend=ninja ${{ matrix.common-options }} ${{ matrix.options }}
           cd build
           ninja test
