@@ -112,6 +112,10 @@ jobs:
         run: >-
           9k build --backend=ninja ${{ matrix.options }}
           -p.github/mopack/boost-1.89.0.yml
+      - name: Set library path (Windows)
+        if: startsWith(matrix.os, 'windows-')
+        run: |
+          echo "PATH=${pwd}\build\mopack\build\mettle;${env:PATH}" >> ${env:GITHUB_ENV}
       - name: Run tests
         run: |
           cd build
