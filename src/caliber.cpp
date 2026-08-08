@@ -36,8 +36,16 @@ namespace caliber {
     struct all_options : mettle::generic_options, mettle::driver_options,
                          mettle::output_options {
       all_options() {
+// Ignore warnings from MSVC about unsafe getenv.
+#if defined(_MSC_VER) && !defined(__clang__)
+#  pragma warning(push)
+#  pragma warning(disable:4996)
+#endif
         auto cxx = getenv("CXX");
         compiler = cxx ? cxx : "c++";
+#if defined(_MSC_VER) && !defined(__clang__)
+#  pragma warning(pop)
+#endif
       }
 
       std::string suite_name = "compilation tests";
